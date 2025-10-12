@@ -1,0 +1,270 @@
+/* Advanced Scroll Animation Styles */
+
+/* Smooth scrolling for the entire page with enhanced performance */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #d82e2e #f1f1f1;
+}
+
+/* Enhanced smooth scroll containers */
+.smooth-scroll-container {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Momentum scroll container */
+.momentum-scroll-container {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Elastic scroll container */
+.elastic-scroll-container {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar - Hidden by default (more aggressive, covers most elements)
+   Note: some mobile OS/browser combos show a temporary overlay scrollbar while
+   the user is actively scrolling (iOS/Android system overlay). Those cannot
+   always be fully suppressed via CSS. This makes scrollbars invisible where
+   the browser honors the scrollbar pseudo-elements. */
+
+/* WebKit-based browsers (Chrome, Safari, Edge) - hide for all elements */
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none !important;
+}
+
+/* IE and old Edge */
+* {
+  -ms-overflow-style: none !important;
+}
+
+/* Touch devices: reinforce rules for coarse pointers (mobile/tablet) */
+@media (pointer: coarse) {
+  *::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: transparent !important;
+  }
+}
+
+/* Optional: to show scrollbars only when hovering specific containers,
+   add a class like `.show-scrollbar-on-hover` to that container and
+   use the rules below. We removed the global `body:hover` rules to keep
+   scrollbars hidden on the Home page carousels.
+
+ .show-scrollbar-on-hover::-webkit-scrollbar {
+   width: 8px;
+ }
+
+ .show-scrollbar-on-hover::-webkit-scrollbar-track {
+   background: #f1f1f1;
+ }
+
+ .show-scrollbar-on-hover::-webkit-scrollbar-thumb {
+   background: #d82e2e;
+   border-radius: 4px;
+ }
+
+ .show-scrollbar-on-hover::-webkit-scrollbar-thumb:hover {
+   background: #b82525;
+ }
+
+*/
+
+/* Parallax container */
+.parallax-container {
+  overflow: hidden;
+  position: relative;
+}
+
+/* Enhanced magnetic hover effects */
+.magnetic-hover {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.magnetic-hover:hover {
+  transform: translateZ(0) scale(1.02);
+}
+
+/* Smooth spring animations */
+.spring-animation {
+  transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition-duration: 0.6s;
+}
+
+/* Elastic bounce effect */
+.elastic-bounce {
+  animation: elasticBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes elasticBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Staggered animation delays */
+.stagger-item:nth-child(1) { animation-delay: 0.1s; }
+.stagger-item:nth-child(2) { animation-delay: 0.2s; }
+.stagger-item:nth-child(3) { animation-delay: 0.3s; }
+.stagger-item:nth-child(4) { animation-delay: 0.4s; }
+.stagger-item:nth-child(5) { animation-delay: 0.5s; }
+.stagger-item:nth-child(6) { animation-delay: 0.6s; }
+
+/* Reveal animation base */
+.reveal-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Scale on scroll */
+.scale-on-scroll {
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* Text reveal effects */
+.text-reveal-word {
+  display: inline-block;
+  overflow: hidden;
+}
+
+.text-reveal-char {
+  display: inline-block;
+  overflow: hidden;
+}
+
+/* Morphing background */
+.morphing-bg {
+  background-size: 200% 200%;
+  animation: gradientShift 10s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Sticky scroll effects */
+.sticky-scroll-container {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sticky-scroll-content {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Scroll progress indicator */
+.scroll-progress-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #d82e2e, #ff6b6b);
+  transform-origin: left;
+  transition: transform 0.1s ease;
+}
+
+/* 3D perspective effects */
+.perspective-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.perspective-item {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+/* Rotation effects */
+.rotate-on-scroll {
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .parallax-container {
+    overflow: visible;
+  }
+  
+  .stagger-item {
+    animation-delay: 0s !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .parallax-container,
+  .magnetic-hover,
+  .scale-on-scroll,
+  .rotate-on-scroll {
+    transform: none !important;
+  }
+}

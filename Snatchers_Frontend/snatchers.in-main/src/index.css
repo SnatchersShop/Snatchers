@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import scroll animations CSS */
+@import './components/ScrollAnimations/ScrollAnimations.css';
+
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:ital@0;1&family=Montserrat:wght@600;700&display=swap');
+
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.font-merriweather {
+  font-family: 'Merriweather', serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Italiana&display=swap');
+
+.single-cat-item {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+
+.single-cat-item .category-thumb {
+  position: relative;
+  overflow: hidden;
+}
+
+.single-cat-item .category-thumb img {
+  width: 100%;
+  display: block;
+  transform-origin: center center;
+  transform: scale(1);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.single-cat-item:hover .category-thumb img {
+  transform: scale(1.1);
+}
+
+.single-cat-item .category-thumb .category-name {
+  border: 2px solid #fff;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  padding: 4px;
+  width: 90%;
+  transition:
+    top 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Italiana', serif;
+}
+
+/* Allow wrapping on small screens to avoid overflow */
+@media (max-width: 640px) {
+  .single-cat-item .category-thumb .category-name {
+    white-space: normal;
+    padding: 6px 8px;
+    width: auto;
+    max-width: 90%;
+  }
+}
+
+.single-cat-item:hover .category-name {
+  top: 70%;
+  transform: translate(-50%, -70%);
+}
+
+/* ✅ Updated from `a` to `span` */
+.single-cat-item .category-thumb .category-name span {
+  background-color: #fff;
+  color: #000000;
+  display: block;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0;
+  padding: 18px 25px;
+  text-align: center;
+  font-family: 'Italiana', serif;
+}
+
+/* Responsive font scaling */
+@media (max-width: 768px) {
+  .single-cat-item .category-thumb .category-name span {
+    font-size: 1rem;
+    padding: 14px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .single-cat-item .category-thumb .category-name span {
+    font-size: 0.9rem;
+    padding: 10px 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .single-cat-item .category-thumb .category-name span {
+    padding: 8px 10px;
+    font-size: 0.64rem;
+  }
+}
+
+/* Maintain bottom margin on small, no margin on large */
+.large-size-cate .single-cat-item {
+  margin-bottom: 15px;
+}
+
+@media only screen and (min-width: 992px) {
+  .large-size-cate .single-cat-item {
+    margin-bottom: 0;
+  }
+}
+
+.small-size-cate {
+  margin-top: -15px;
+}
+
+/* Remove negative margin on very small devices */
+@media (max-width: 640px) {
+  .small-size-cate {
+    margin-top: 0;
+  }
+}
+
+.small-size-cate .single-cat-item {
+  margin-top: 15px;
+}
+
+/* Optional: prevent horizontal overflow on very small screens */
+
+
+
+
+
+
+
+/* Hide scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
