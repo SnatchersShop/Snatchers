@@ -1,4 +1,17 @@
-import admin from '../firebase/initFirebase.js';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
+
+function createVerifier() {
+  const userPoolId = process.env.COGNITO_USER_POOL_ID;
+  const clientId = process.env.COGNITO_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID;
+  if (!userPoolId || !clientId) {
+    console.warn('COGNITO_USER_POOL_ID or COGNITO_USER_POOL_CLIENT_ID not set in env. Auth middleware may fail.');
+  }
+  return CognitoJwtVerifier.create({
+    userPoolId: userPoolId || '<YOUR_USER_POOL_ID>',
+    tokenUse: 'id',
+    clientId: clientId || '<YOUR_CLIENT_ID>',
+  });
+}
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -7,18 +20,16 @@ const verifyToken = async (req, res, next) => {
     return res.status(401).json({ message: 'No token provided' });
   }
 
-  const idToken = authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
+    const verifier = createVerifier();
+    const payload = await verifier.verify(token);
+    req.user = payload;
     next();
-  } catch (error) {
-    console.error("Firebase token error:", error);
-    return res.status(401).json({
-      message: 'Invalid or expired Firebase ID token',
-      details: error.message,
-    });
+  } catch (err) {
+    console.error('Cognito token verification failed:', err);
+    return res.status(401).json({ message: 'Unauthorized', details: err?.message });
   }
 };
 

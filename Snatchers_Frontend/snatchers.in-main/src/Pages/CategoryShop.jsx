@@ -95,7 +95,7 @@ const CategoryShop = () => {
 
         // Match if jewelryType appears in title, matches a product.type field, or exists in occasion (some sites tag types in occasion)
         const matchesInTitle = q && productTitle.includes(q);
-        const matchesInType = q && productType && (productType === q || synSet.has(q) && synSet.has(productType));
+  const matchesInType = q && productType && (productType === q || (synSet.has(q) && synSet.has(productType)));
         const matchesInOccasion = q && productOccasions.some(o => o === q);
 
         // Also check synonyms (e.g., 'ring' vs 'rings', 'bracelet' vs 'bangle') by seeing if any synonym matches title/type/occasion
@@ -173,6 +173,7 @@ const CategoryShop = () => {
                 image={product.images?.[0] || placeholderImg}
                 title={product.title}
                 price={product.price}
+                offerPrice={product.offerPrice}
                 rating={product.rating}
                 badgeText={product.badgeText}
                 badgeClass={product.badgeClass}

@@ -34,6 +34,7 @@ export default function ProductSection({ title = 'Products', limit = 12 }) {
           _id: p._id || p.id?.toString?.() || `${p.title}-${Math.random()}`,
           title: p.title,
           price: p.price,
+          offerPrice: p.offerPrice || null,
           rating: p.rating,
           images: p.images || [],
           badgeText: p.badgeText,
@@ -102,6 +103,7 @@ export default function ProductSection({ title = 'Products', limit = 12 }) {
             image={prod.images?.[0] || '/fallback-image.jpg'}
             title={prod.title}
             price={prod.price}
+            offerPrice={prod.offerPrice}
             rating={prod.rating}
             badgeText={prod.badgeText}
             badgeClass={prod.badgeClass}

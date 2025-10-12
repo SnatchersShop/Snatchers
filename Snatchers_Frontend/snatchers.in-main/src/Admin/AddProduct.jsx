@@ -5,6 +5,7 @@ const AddProduct = () => {
   const [form, setForm] = useState({
     title: '',
     price: '',
+    offerPrice: '',
     rating: '',
     badgeText: '',
     badgeClass: '',
@@ -33,6 +34,7 @@ const AddProduct = () => {
           formData.append('images', val[i]);
         }
       } else {
+        // Normalize empty strings to null for numeric fields if appropriate
         formData.append(key, val);
       }
     });
@@ -71,6 +73,17 @@ const AddProduct = () => {
               onChange={handleChange}
               placeholder="149.99"
               required
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Offer Price</label>
+            <input
+              name="offerPrice"
+              type="number"
+              step="0.01"
+              onChange={handleChange}
+              placeholder="129.99"
               className="w-full border rounded px-3 py-2"
             />
           </div>

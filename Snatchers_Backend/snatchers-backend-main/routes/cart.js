@@ -8,7 +8,8 @@ const router = express.Router();
 // GET: Fetch user's cart
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const cart = await Cart.findOne({ userId: req.user.uid }).populate("products.product");
+    const userId = req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
+    const cart = await Cart.findOne({ userId }).populate("products.product");
     res.json(cart?.products || []);
   } catch (err) {
     res.status(500).json({ message: "Error fetching cart", error: err.message });
@@ -18,7 +19,7 @@ router.get("/", verifyToken, async (req, res) => {
 // POST: Add or update a product in the cart
 router.post("/:productId", verifyToken, async (req, res)   => {
   try {
-    const userId = req.user.uid;
+  const userId = req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
     const productId = req.params.productId;
     const { quantity = 1 } = req.body;
 
@@ -45,7 +46,7 @@ router.post("/:productId", verifyToken, async (req, res)   => {
 // DELETE: Remove a product from the cart
 router.delete("/:productId", verifyToken, async (req, res) => {
   try {
-    const userId = req.user.uid;
+  const userId = req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
     const productId = req.params.productId;
 
     const cart = await Cart.findOneAndUpdate(

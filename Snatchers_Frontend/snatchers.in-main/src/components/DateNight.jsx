@@ -253,6 +253,7 @@ const DateNight = () => {
                 image={product.images?.[0] || placeholderImg}
                 title={product.title}
                 price={product.price}
+                offerPrice={product.offerPrice}
                 rating={product.rating}
                 wishlisted={wishlist.includes(product._id)}
                 onToggleWishlist={() => toggleWishlist(product._id)}

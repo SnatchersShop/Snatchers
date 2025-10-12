@@ -4,7 +4,7 @@ import ProductCard from '../UI/ProductCard';
 import { useNavigate } from 'react-router-dom';
 import AnimatedHeading from '../UI/AnimatedHeading'; // Adjust path as needed
 import { WishlistContext } from '../contexts/WishlistContext';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 const placeholderImg = '/placeholder.png'; // Replace with your actual path if different
 
@@ -14,23 +14,19 @@ const Wishlist = () => {
   const navigate = useNavigate();
   const { wishlist: localWishlist, toggleWishlist: toggleLocalWishlist } = useContext(WishlistContext);
   const [tokenAvailable, setTokenAvailable] = useState(false);
+  const { getSession } = useAuth();
   const showDebug = typeof window !== 'undefined' && window.location.search.includes('debug=1');
 
   const fetchWishlist = async () => {
     try {
-      // Prefer token from localStorage, but fall back to Firebase Auth currentUser
+      // Prefer ID token from Cognito session, fallback to stored backend token
       let token = localStorage.getItem('token');
       if (!token) {
         try {
-          const auth = getAuth();
-          const user = auth.currentUser;
-          if (user) {
-            token = await user.getIdToken();
-          }
+          const session = await getSession();
+          if (session) token = session.getIdToken().getJwtToken();
         } catch (innerErr) {
-          const [lastResponse, setLastResponse] = useState(null);
-          // ignore, we'll treat as unauthenticated
-          console.debug('No Firebase token available:', innerErr?.message || innerErr);
+          console.debug('No Cognito session available:', innerErr?.message || innerErr);
         }
       }
 
@@ -48,13 +44,10 @@ const Wishlist = () => {
 
         let localProducts = [];
         if (localIds.length > 0) {
-          // Fetch product details in parallel
+          // Fetch product details in parallel for local ids not present on server
+          const fetches = localIds.map(id => axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/products/${id}`).then(r => r.data).catch(() => null));
           const fetched = await Promise.all(fetches);
           localProducts = fetched.filter(Boolean);
-                const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                setLastResponse(res.data);
         }
 
         setWishlist([...serverProducts, ...localProducts]);
@@ -84,9 +77,17 @@ const Wishlist = () => {
 
   const removeFromWishlist = async (productId) => {
     try {
-      const token = localStorage.getItem('token');
+      let token = localStorage.getItem('token');
+      if (!token) {
+        try {
+          const session = await getSession();
+          if (session) token = session.getIdToken().getJwtToken();
+        } catch (e) {
+          // ignore
+        }
+      }
+
       if (token) {
-              setLastResponse(details);
         await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist/${productId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -123,12 +124,11 @@ const Wishlist = () => {
   // events and wait for Firebase auth readiness before fetching so we get a token
   // when available.
   useEffect(() => {
-    // Listen for auth state changes and re-fetch when the user becomes available
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // When auth state changes (login/logout), refresh wishlist
+    // Check current session and re-fetch when wishlist changes
+    (async () => {
+      await getSession();
       fetchWishlist();
-    });
+    })();
 
     // Also listen for manual wishlist changed events from other components
     const handler = () => fetchWishlist();
@@ -139,7 +139,6 @@ const Wishlist = () => {
     fetchWishlist();
 
     return () => {
-      unsubscribe();
       window.removeEventListener('wishlist:changed', handler);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,7 +170,8 @@ const Wishlist = () => {
               key={product._id}
               image={product.images?.[0] || placeholderImg}
               title={product.title}
-              price={`₹${product.price}`}
+              price={product.price}
+              offerPrice={product.offerPrice}
               rating={product.rating}
               onAddToCart={(e) => {
                 e.stopPropagation();

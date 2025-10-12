@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
 import axios from "axios";
-import { getAuth } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 const NewProducts = () => {
   const navigate = useNavigate();
@@ -10,6 +10,7 @@ const NewProducts = () => {
   const [wishlist, setWishlist] = useState([]);
   const [cart, setCart] = useState([]);
   const [token, setToken] = useState(null);
+  const { getSession } = useAuth();
 
   const placeholderImg =
     "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png";
@@ -17,8 +18,8 @@ const NewProducts = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const session = await getSession();
+        const idToken = session ? session.getIdToken().getJwtToken() : null;
         
         // Always fetch products (no auth required)
         const productRes = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/products`);
@@ -28,8 +29,7 @@ const NewProducts = () => {
         setProducts(sorted.slice(0, 8));
 
         // Only fetch user-specific data if logged in
-        if (user) {
-          const idToken = await user.getIdToken();
+        if (session) {
           setToken(idToken);
 
           try {
@@ -68,7 +68,7 @@ const NewProducts = () => {
     };
 
     fetchData();
-  }, []);
+  }, [getSession]);
 
   const toggleWishlist = async (e, productId) => {
     e?.stopPropagation?.();
@@ -156,6 +156,7 @@ const NewProducts = () => {
                 image={product.images?.[0] || placeholderImg}
                 title={product.title}
                 price={product.price}
+                offerPrice={product.offerPrice}
                 rating={product.rating}
                 badgeText={product.badgeText}
                 badgeClass={product.badgeClass}

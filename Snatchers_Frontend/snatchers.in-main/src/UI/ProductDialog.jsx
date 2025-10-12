@@ -6,7 +6,7 @@ import { Navigation, Thumbs } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/thumbs";
 import "swiper/css/navigation";
-import { getAuth } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { motion } from "framer-motion";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import products from "../Data/ProductData";
@@ -37,21 +37,19 @@ const ProductDialog = () => {
   const [wishlist, setWishlist] = useState([]);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { getSession } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         console.log("Fetching product with ID:", productId);
         console.log("API Base URL:", process.env.REACT_APP_API_BASE_URL);
-        
-        const auth = getAuth();
-        const user = auth.currentUser;
-        let idToken = null;
-        
-        if (user) {
-          idToken = await user.getIdToken();
-          setToken(idToken);
-        }
+      const session = await getSession();
+      let idToken = null;
+      if (session) {
+        idToken = session.getIdToken().getJwtToken();
+        setToken(idToken);
+      }
 
         const productUrl = `${process.env.REACT_APP_API_BASE_URL}/api/products/${productId}`;
         console.log("Product URL:", productUrl);
@@ -79,6 +77,7 @@ const ProductDialog = () => {
               _id: localProduct._id || localProduct.id.toString(),
               title: localProduct.title,
               price: localProduct.price,
+              offerPrice: localProduct.offerPrice || null,
               rating: localProduct.rating,
               description: localProduct.description,
               images: localProduct.images,
@@ -99,6 +98,7 @@ const ProductDialog = () => {
                 _id: fallbackProduct._id || fallbackProduct.id.toString(),
                 title: fallbackProduct.title,
                 price: fallbackProduct.price,
+                offerPrice: fallbackProduct.offerPrice || null,
                 rating: fallbackProduct.rating,
                 description: fallbackProduct.description,
                 images: fallbackProduct.images,
@@ -114,8 +114,8 @@ const ProductDialog = () => {
           }
         }
         
-        // Only fetch cart and wishlist data if user is authenticated
-        if (user && idToken) {
+  // Only fetch cart and wishlist data if user is authenticated
+  if (session && idToken) {
           try {
             const [cartRes, wishlistRes] = await Promise.all([
               axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/cart`, {
@@ -147,7 +147,7 @@ const ProductDialog = () => {
     };
 
     fetchData();
-  }, [productId]);
+  }, [productId, getSession]);
 
   const isInCart = product ? cart.includes(product._id) : false;
   const isWishlisted = product ? wishlist.includes(product._id) : false;
@@ -203,7 +203,7 @@ const ProductDialog = () => {
 
   const handleShare = async () => {
     const productUrl = `${window.location.origin}/product/${product._id}`;
-    const shareText = `Check out this beautiful ${product.title} from Snatchers! Only ₹${product.price}`;
+  const shareText = `Check out this beautiful ${product.title} from Snatchers! Only ₹${product.offerPrice ?? product.price}`;
     
     // Check if Web Share API is supported
     if (navigator.share) {
@@ -441,12 +441,21 @@ const ProductDialog = () => {
                 transition={{ duration: 0.3, delay: 0.3 }}
                 className="mb-8"
               >
-                <div className="flex items-baseline space-x-2">
-                  <span className="text-3xl sm:text-4xl font-bold text-gray-900">
-                    ₹{product.price}
-                  </span>
-                  <span className="text-sm text-gray-500">INR</span>
-                </div>
+                    <div className="flex items-baseline space-x-3">
+                      {product.offerPrice ? (
+                        <>
+                          <span className="text-lg text-gray-500 line-through">₹{product.price}</span>
+                          <span className="text-3xl sm:text-4xl font-bold text-gray-900">₹{product.offerPrice}</span>
+                          <span className="text-sm text-gray-500">INR</span>
+                          <span className="ml-3 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded">Offer</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-3xl sm:text-4xl font-bold text-gray-900">₹{product.price}</span>
+                          <span className="text-sm text-gray-500">INR</span>
+                        </>
+                      )}
+                    </div>
                 
               </motion.div>
 

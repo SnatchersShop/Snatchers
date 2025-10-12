@@ -26,10 +26,29 @@ const BuyNowComponent = () => {
 
   // Prefill email from backend
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
+    const token = localStorage.getItem('token');
+    if (useServer) {
+      // Try same-origin request which will send HTTP-only session cookie set by backend
+      axios
+        .get(`/api/user/me`, { withCredentials: true })
+        .then((response) => {
+          const user = response.data && response.data.user ? response.data.user : response.data;
+          setForm((prev) => ({ ...prev, email: user.email || '' }));
+        })
+        .catch((error) => {
+          console.log('Authentication error (server):', error.response?.status);
+          if (error.response?.status === 401) {
+            setAuthError('Your session has expired. Please login again to continue.');
+          } else {
+            setAuthError('Unable to load user information. Please try again.');
+          }
+        });
+      return;
+    }
+
     if (!token) {
-      // If no token, redirect to login or show login prompt
-      console.log("No authentication token found");
+      console.log('No authentication token found');
       return;
     }
 
@@ -38,23 +57,17 @@ const BuyNowComponent = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
-        const user = response.data;
-        setForm((prev) => ({
-          ...prev,
-          email: user.email || "",
-        }));
+        const user = response.data && response.data.user ? response.data.user : response.data;
+        setForm((prev) => ({ ...prev, email: user.email || '' }));
       })
       .catch((error) => {
-        console.log("Authentication error:", error.response?.status);
+        console.log('Authentication error:', error.response?.status);
         if (error.response?.status === 401) {
-          // Token is invalid or expired, clear it and redirect to login
-          localStorage.removeItem("token");
-          setAuthError("Your session has expired. Please login again to continue.");
-          console.log("Token expired or invalid, please login again");
-          // You can add a redirect to login page here if needed
-          // window.location.href = "/login";
+          localStorage.removeItem('token');
+          setAuthError('Your session has expired. Please login again to continue.');
+          console.log('Token expired or invalid, please login again');
         } else {
-          setAuthError("Unable to load user information. Please try again.");
+          setAuthError('Unable to load user information. Please try again.');
         }
       });
   }, []);

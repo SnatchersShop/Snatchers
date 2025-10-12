@@ -98,6 +98,7 @@ const Cart = () => {
                 image={product.images?.[0] || placeholderImg}
                 title={product.title}
                 price={product.price}
+                offerPrice={product.offerPrice}
                 rating={product.rating}
                 isInCart={true}
                 onAddToCart={() => handleCartToggle(product)}

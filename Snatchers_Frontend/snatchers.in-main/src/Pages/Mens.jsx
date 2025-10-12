@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
 import { motion } from "framer-motion";
 import axios from "axios";
-import { getAuth } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext.jsx';
 import productsFallback from '../Data/ProductData';
 
 const Mens = () => {
@@ -14,6 +14,7 @@ const Mens = () => {
   const navigate = useNavigate();
   const [usedFallback, setUsedFallback] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const { getSession } = useAuth();
 
   const placeholderImg =
     "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png";
@@ -21,8 +22,8 @@ const Mens = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const session = await getSession();
+  const user = session ? { username: session.getIdToken().payload['cognito:username'] || session.getIdToken().payload.email } : null;
         
         // Always fetch products (no auth required)
         try {
@@ -36,6 +37,7 @@ const Mens = () => {
             _id: p._id || p.id?.toString?.() || `${p.title}-${Math.random()}`,
             title: p.title,
             price: p.price,
+            offerPrice: p.offerPrice || null,
             rating: p.rating,
             images: p.images || [],
             badgeText: p.badgeText,
@@ -47,8 +49,8 @@ const Mens = () => {
         }
 
         // Only fetch user-specific data if logged in
-        if (user) {
-          const idToken = await user.getIdToken();
+        if (session) {
+          const idToken = session.getIdToken().getJwtToken();
           setToken(idToken);
 
           try {
@@ -87,7 +89,7 @@ const Mens = () => {
     };
 
     fetchData();
-  }, []);
+  }, [getSession]);
 
   const toggleWishlist = async (e, productId) => {
     e?.stopPropagation?.();
@@ -206,6 +208,7 @@ const Mens = () => {
                 image={product.images?.[0] || placeholderImg}
                 title={product.title}
                 price={product.price}
+                offerPrice={product.offerPrice}
                 rating={product.rating}
                 badgeText={product.badgeText}
                 badgeClass={product.badgeClass}

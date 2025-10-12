@@ -1,0 +1,15 @@
+[Unit]
+Description=Snatchers Backend (Node.js)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/home/ubuntu/Snatchers/Snatchers_Backend/snatchers-backend-main
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+EnvironmentFile=/etc/snatchers-backend.env
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

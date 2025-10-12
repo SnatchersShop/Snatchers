@@ -25,15 +25,16 @@ router.post('/', async (req, res) => {
 // ✅ Protected route to get user info from token
 router.get('/me', verifyToken, async (req, res) => {
   try {
-    let user = await User.findOne({ uid: req.user.uid });
+    const uid = req.user.sub || req.user.uid || req.user['cognito:username'];
+    let user = await User.findOne({ uid });
 
-    // 🔧 Auto-create user if not found
+    // 🔧 Auto-create user if not found using Cognito claims
     if (!user) {
       user = new User({
-        uid: req.user.uid,
-        name: req.user.name || "Unknown",
+        uid,
+        name: req.user.name || req.user['cognito:username'] || "Unknown",
         email: req.user.email || "unknown@example.com",
-        photoURL: req.user.photoURL || ""
+        photoURL: req.user.picture || ""
       });
       await user.save();
     }

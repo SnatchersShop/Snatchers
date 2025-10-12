@@ -20,18 +20,20 @@
   },
   "homepage": "https://github.com/ankmay0/snatchers-backend#readme",
   "dependencies": {
+    "aws-jwt-verify": "^3.1.0",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
+    "ejs": "^3.1.10",
     "express": "^5.1.0",
-    "firebase": "^11.8.1",
-    "firebase-admin": "^13.4.0",
+    "express-session": "^1.18.1",
     "fuse.js": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.1",
     "multer": "^2.0.1",
     "multer-storage-cloudinary": "^4.0.0",
+    "openid-client": "^5.7.0",
     "razorpay": "^2.9.6"
   }
 }

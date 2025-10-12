@@ -1,7 +1,22 @@
 import express from 'express';
-import admin from '../firebase/initFirebase.js';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
+import User from '../models/User.js';
 
 const router = express.Router();
+
+// Create verifier lazily so env vars are available at runtime
+function createVerifier() {
+  const userPoolId = process.env.COGNITO_USER_POOL_ID;
+  const clientId = process.env.COGNITO_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID;
+  if (!userPoolId || !clientId) {
+    throw new Error('COGNITO_USER_POOL_ID and COGNITO_USER_POOL_CLIENT_ID must be set');
+  }
+  return CognitoJwtVerifier.create({
+    userPoolId,
+    tokenUse: 'id',
+    clientId,
+  });
+}
 
 router.post('/login', async (req, res) => {
   const { idToken } = req.body;
@@ -11,11 +26,26 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    // Optionally generate a JWT or just return decoded user
-    res.status(200).json({ token: idToken, user: decoded });
+    const verifier = createVerifier();
+    const payload = await verifier.verify(idToken);
+
+    // Map Cognito attributes to user model
+    const uid = payload.sub;
+    const email = payload.email;
+    const name = payload.name || payload['cognito:username'] || '';
+
+    // Upsert user in MongoDB
+    const user = await User.findOneAndUpdate(
+      { uid },
+      { uid, email, name },
+      { upsert: true, new: true }
+    );
+
+    // Optionally create a signed JWT for your backend sessions
+    // For now, return the idToken and user info
+    res.status(200).json({ token: idToken, user });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Cognito login error:', error);
     return res.status(401).json({ error: 'Invalid ID token' });
   }
 });

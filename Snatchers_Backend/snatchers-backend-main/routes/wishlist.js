@@ -16,9 +16,10 @@ const router = express.Router();
 // });
 router.get("/", verifyToken, async (req, res) => {
   try {
-    console.log("Decoded user ID:", req.user?.uid); // log userId
+  const uid = req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
+  console.log("Decoded user ID:", uid); // log userId
 
-    const wishlist = await Wishlist.findOne({ userId: req.user.uid }).populate("products");
+  const wishlist = await Wishlist.findOne({ userId: uid }).populate("products");
 
     res.json(wishlist?.products || []);
   } catch (err) {
@@ -30,7 +31,7 @@ router.get("/", verifyToken, async (req, res) => {
 // POST: Add product to wishlist
 router.post("/:productId", verifyToken, async (req, res) => {
   try {
-    const userId = req.user.uid;
+  const userId = req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
     const productId = req.params.productId;
 
     let wishlist = await Wishlist.findOne({ userId });
@@ -49,7 +50,7 @@ router.post("/:productId", verifyToken, async (req, res) => {
 // DELETE: Remove product from wishlist
 router.delete("/:productId", verifyToken, async (req, res) => {
   try {
-    const userId = req.user.uid;
+  const userId = req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
     const productId = req.params.productId;
 
     const wishlist = await Wishlist.findOneAndUpdate(

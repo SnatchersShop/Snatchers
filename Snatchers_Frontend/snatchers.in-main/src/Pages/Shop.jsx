@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ProductCard from "../UI/ProductCard";
-import { getAuth } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { StaggeredReveal, RevealOnScroll, MagneticScroll } from "../components/ScrollAnimations";
 import productsFallback from '../Data/ProductData';
 
@@ -14,6 +14,7 @@ const Shop = () => {
   const [usedFallback, setUsedFallback] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
+  const { getSession } = useAuth();
 
   const placeholderImg =
     "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png";
@@ -21,8 +22,7 @@ const Shop = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const session = await getSession();
         
         // Always fetch products (no auth required)
         try {
@@ -36,6 +36,7 @@ const Shop = () => {
             _id: p._id || p.id?.toString?.() || `${p.title}-${Math.random()}`,
             title: p.title,
             price: p.price,
+            offerPrice: p.offerPrice || null,
             rating: p.rating,
             images: p.images || [],
             badgeText: p.badgeText,
@@ -47,8 +48,8 @@ const Shop = () => {
         }
 
         // Only fetch user-specific data if logged in
-        if (user) {
-          const idToken = await user.getIdToken();
+        if (session) {
+          const idToken = session.getIdToken().getJwtToken();
           setToken(idToken);
 
           try {
@@ -87,7 +88,7 @@ const Shop = () => {
     };
 
     fetchData();
-  }, []);
+  }, [getSession]);
 
   const toggleWishlist = async (e, productId) => {
     e?.stopPropagation?.();
@@ -171,6 +172,7 @@ const Shop = () => {
                     image={product.images?.[0] || placeholderImg}
                     title={product.title}
                     price={product.price}
+                    offerPrice={product.offerPrice}
                     rating={product.rating}
                     badgeText={product.badgeText}
                     badgeClass={product.badgeClass}

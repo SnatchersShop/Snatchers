@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
 import { motion } from "framer-motion";
 import axios from "axios";
-import { getAuth } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext.jsx';
 import productsFallback from '../Data/ProductData';
 
 const Womens = () => {
@@ -12,6 +12,7 @@ const Womens = () => {
   const [cart, setCart] = useState([]);
   const [token, setToken] = useState(null);
   const navigate = useNavigate();
+  const { getSession } = useAuth();
   const [usedFallback, setUsedFallback] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -21,8 +22,7 @@ const Womens = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const session = await getSession();
         
         // Always fetch products (no auth required)
         try {
@@ -36,6 +36,7 @@ const Womens = () => {
             _id: p._id || p.id?.toString?.() || `${p.title}-${Math.random()}`,
             title: p.title,
             price: p.price,
+            offerPrice: p.offerPrice || null,
             rating: p.rating,
             images: p.images || [],
             badgeText: p.badgeText,
@@ -47,8 +48,8 @@ const Womens = () => {
         }
 
         // Only fetch user-specific data if logged in
-        if (user) {
-          const idToken = await user.getIdToken();
+        if (session) {
+          const idToken = session.getIdToken().getJwtToken();
           setToken(idToken);
 
           try {
@@ -87,7 +88,7 @@ const Womens = () => {
     };
 
     fetchData();
-  }, []);
+  }, [getSession]);
 
   const toggleWishlist = async (e, productId) => {
     e?.stopPropagation?.();
@@ -210,6 +211,7 @@ const Womens = () => {
                 image={product.images?.[0] || placeholderImg}
                 title={product.title}
                 price={product.price}
+                offerPrice={product.offerPrice}
                 rating={product.rating}
                 badgeText={product.badgeText}
                 badgeClass={product.badgeClass}

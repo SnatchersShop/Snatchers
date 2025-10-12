@@ -9,29 +9,46 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
 
+  const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
+
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
       try {
+        if (useServer) {
+          // Use server-side session cookie (HTTP-only) to get user via same-origin request
+          const res = await fetch(`/api/user/me`, { credentials: 'include' });
+          if (!res.ok) {
+            navigate('/login');
+            return;
+          }
+          const data = await res.json();
+          // backend may return { user } or the user object directly
+          const serverUser = data && data.user ? data.user : data;
+          setUser(serverUser);
+          setLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
         const res = await fetch(
           `${process.env.REACT_APP_API_BASE_URL}/api/user/me`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        if (!res.ok) throw new Error("Unauthorized");
+        if (!res.ok) throw new Error('Unauthorized');
         const data = await res.json();
-        setUser(data);
+        setUser(data && data.user ? data.user : data);
         setLoading(false);
       } catch (error) {
-        console.error("Fetch user error:", error);
-        navigate("/login");
+        console.error('Fetch user error:', error);
+        navigate('/login');
       }
     };
     fetchUser();
-  }, [navigate]);
+  }, [navigate, useServer]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -39,20 +56,36 @@ const ProfilePage = () => {
       
       try {
         // First, try to fetch from API
-        const token = localStorage.getItem("token");
-        if (token) {
+        const token = localStorage.getItem('token');
+        if (useServer) {
           try {
             const res = await fetch(
-              `${process.env.REACT_APP_API_BASE_URL}/api/orders/email/${encodeURIComponent(user.email)}`,
-              { headers: { Authorization: `Bearer ${token}` } }
+              `/api/orders/email/${encodeURIComponent(user.email)}`,
+              { credentials: 'include' }
             );
-            
             if (res.ok) {
               const data = await res.json();
               const apiOrders = data.orders || [];
               if (apiOrders.length > 0) {
                 setOrders(apiOrders);
-                return; // Successfully got orders from API
+                return;
+              }
+            }
+          } catch (apiError) {
+            console.log('Server orders not available, falling back to localStorage');
+          }
+        } else if (token) {
+          try {
+            const res = await fetch(
+              `${process.env.REACT_APP_API_BASE_URL}/api/orders/email/${encodeURIComponent(user.email)}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              const apiOrders = data.orders || [];
+              if (apiOrders.length > 0) {
+                setOrders(apiOrders);
+                return;
               }
             }
           } catch (apiError) {

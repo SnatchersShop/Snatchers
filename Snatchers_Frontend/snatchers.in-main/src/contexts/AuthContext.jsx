@@ -1,42 +1,9 @@
-  import React, { createContext, useContext, useState, useEffect } from "react";
-  import { auth, provider } from "../Firebase/Firebase.js";
-  import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
+import CognitoAuthProvider, { useCognitoAuth } from './CognitoAuth';
 
-  const AuthContext = createContext(null);
+// Re-export provider under the original name to avoid changing imports across the app
+export const AuthProvider = CognitoAuthProvider;
 
-  export function AuthProvider({ children }) {
-    const [currentUser, setCurrentUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    function login() {
-      return signInWithPopup(auth, provider);
-    }
-
-    function logout() {
-      return signOut(auth);
-    }
-
-    useEffect(() => {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setCurrentUser(user);
-        setLoading(false);
-      });
-      return unsubscribe;
-    }, []);
-
-    const value = {
-      currentUser,
-      login,
-      logout,
-    };
-
-    return (
-      <AuthContext.Provider value={value}>
-        {!loading && children}
-      </AuthContext.Provider>
-    );
-  }
-
-  export function useAuth() {
-    return useContext(AuthContext);
-  }
+// keep the same hook name used throughout the codebase
+export function useAuth() {
+  return useCognitoAuth();
+}

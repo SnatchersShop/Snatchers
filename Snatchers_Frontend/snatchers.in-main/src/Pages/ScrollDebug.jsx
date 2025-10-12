@@ -3,7 +3,6 @@ import {
   ScrollReveal, 
   RevealOnScroll, 
   DebugScrollReveal,
-  SimpleScrollReveal,
   ScrollProgress 
 } from "../components/ScrollAnimations";
 
