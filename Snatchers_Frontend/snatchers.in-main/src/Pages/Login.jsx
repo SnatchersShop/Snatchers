@@ -8,8 +8,10 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 export default function Auth() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const useDemo = process.env.REACT_APP_DEMO_AUTH === 'true';
+  const [email, setEmail] = useState(useDemo ? 'test@local' : '');
+  const [password, setPassword] = useState(useDemo ? 'password' : '');
+  const [existingServerUser, setExistingServerUser] = useState(null);
 
   async function handleAuth() {
     // If server-side auth is enabled, redirect to backend's OIDC login route
@@ -93,6 +95,7 @@ export default function Auth() {
   }
 
   // When using server-side auth, check on mount if the server session already exists.
+  // Do NOT auto-redirect; just detect and let the tester decide to continue.
   useEffect(() => {
     const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
     if (!useServer) return;
@@ -101,15 +104,14 @@ export default function Auth() {
         const res = await fetch(`/api/user/me`, { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
-          console.log('Server session detected, user:', data.user || data);
-          // Navigate to profile if logged in
-          setTimeout(() => navigate('/profile'), 500);
+          setExistingServerUser(data.user || data);
+          console.log('Server session detected (no auto-redirect):', data.user || data);
         }
       } catch (err) {
         // ignore, user not logged in
       }
     })();
-  }, [navigate]);
+  }, []);
 
 
 
@@ -122,6 +124,19 @@ export default function Auth() {
       >
         <div className="w-full max-w-md p-8 border-2 border-red-600 rounded-lg shadow-lg bg-white text-center">
           <h2 className="text-3xl font-semibold text-red-600 mb-8">Authenticate</h2>
+          {existingServerUser ? (
+            <div>
+              <p className="mb-4">Detected server session for <strong>{existingServerUser.email}</strong>.</p>
+              <button
+                onClick={() => navigate('/profile')}
+                className="w-full py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition"
+              >
+                Continue to profile
+              </button>
+              <div className="text-sm text-gray-500 mt-3">Or sign in with a different account below.</div>
+            </div>
+          ) : null}
+
           <input value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="Email" className="mb-2 p-2 border" />
           <input value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="Password" type="password" className="mb-4 p-2 border" />
           <button
