@@ -6,6 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "validate-config": "node ./bin/validate-config.js",
+  "migrate:add-offerPrice": "node ./bin/migrate-add-offerPrice.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

@@ -145,6 +145,25 @@ function isValidRedirectUri(uri) {
   return cognitoRedirectUris.includes(uri);
 }
 
+// Startup validation: in production we must ensure the FRONTEND_URL is included
+// in the configured Cognito redirect URIs. This prevents users from being
+// redirected to the provider-hosted error page (redirect_mismatch). You can
+// also force this check in non-production by setting FAIL_FAST_ON_MISSING_REDIRECT=true
+const requireFrontendInRedirects = (process.env.FAIL_FAST_ON_MISSING_REDIRECT === 'true') || process.env.NODE_ENV === 'production';
+if (requireFrontendInRedirects) {
+  if (!isValidRedirectUri(frontend)) {
+    console.error(`❌ Startup check failed: FRONTEND_URL (${frontend}) is not present in COGNITO_REDIRECT_URI list: ${JSON.stringify(cognitoRedirectUris)}.`);
+    console.error('Refusing to start to avoid redirect_mismatch errors. Fix your environment variables or Cognito App Client settings.');
+    // Exit with non-zero code so orchestration/CI will notice the misconfiguration
+    process.exit(1);
+  }
+} else {
+  if (!isValidRedirectUri(frontend)) {
+    console.warn(`⚠️ FRONTEND_URL (${frontend}) is not present in COGNITO_REDIRECT_URI list: ${JSON.stringify(cognitoRedirectUris)}.`);
+    console.warn('In non-production this is allowed, but you may see redirect_mismatch errors when testing OIDC flows.');
+  }
+}
+
 // In-memory temporary token store for callback -> SPA handshake
 const tempAuthTokens = new Map(); // token => { userInfo, tokenSet, expires }
 async function initOidc() {
@@ -210,6 +229,53 @@ app.get('/', checkAuth, (req, res) => {
     isAuthenticated: req.isAuthenticated,
     userInfo: req.session.userInfo,
   });
+});
+
+// Health / diagnostic endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const mongoState = mongoose.connection.readyState; // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    const mongoStatus = (() => {
+      switch (mongoState) {
+        case 0:
+          return 'disconnected';
+        case 1:
+          return 'connected';
+        case 2:
+          return 'connecting';
+        case 3:
+          return 'disconnecting';
+        default:
+          return 'unknown';
+      }
+    })();
+
+    const configIssues = [];
+    if (!process.env.MONGO_URI) configIssues.push('MONGO_URI missing');
+    if (!process.env.COGNITO_CLIENT_ID) configIssues.push('COGNITO_CLIENT_ID missing');
+    if (!process.env.COGNITO_USER_POOL_ID) configIssues.push('COGNITO_USER_POOL_ID missing');
+    if (!process.env.COGNITO_REGION) configIssues.push('COGNITO_REGION missing');
+    if (!process.env.COGNITO_REDIRECT_URI) configIssues.push('COGNITO_REDIRECT_URI missing');
+    if (!process.env.FRONTEND_URL) configIssues.push('FRONTEND_URL missing');
+    if (cognitoRedirectUris.length > 0 && !cognitoRedirectUris.includes(frontend)) {
+      configIssues.push('FRONTEND_URL not present in COGNITO_REDIRECT_URI list');
+    }
+
+    return res.json({
+      status: 'ok',
+      pid: process.pid,
+      uptime: process.uptime(),
+      oidcClientInitialized: !!oidcClient,
+      mongo: { state: mongoState, status: mongoStatus },
+      configIssues,
+      env: {
+        nodeEnv: process.env.NODE_ENV || null,
+        frontend: frontend || null,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', error: String(err) });
+  }
 });
 
 // OIDC login route - redirect to Cognito hosted login page

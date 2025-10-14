@@ -22,6 +22,13 @@ const founders = [
       "Ayush Gupta, Co-Founder of Snatchers, brings a wealth of expertise with a strong background in startups and sustainability. With a clear focus on delivering excellent customer service, he is dedicated to making jewellery both meaningful and accessible.",
     imgSrc: "/Ayush.jpg",
   },
+  {
+    name: "Pritideepa Mohanty",
+    title: "Marketing Head",
+    description:
+      "Pritideepa Mohanty, Marketing Head of Snatchers, is an experienced marketing professional with a passion for building brands that truly connect with people. With a strong background in digital marketing and brand strategy, she brings creativity and insight to every campaign. Her deep understanding of consumer trends helps shape Snatchers’ vision of making style accessible to everyone.",
+    imgSrc: "/Pritideepa.jpg",
+  }
 ];
 
 export default function About() {
@@ -50,59 +57,16 @@ export default function About() {
           </div>
         </StaggeredReveal>
 
-        {/* <ScrollReveal direction="up" distance={60}>
-          <h2 className="text-2xl font-semibold mt-8 mb-4">Our Philosophy</h2>
-        </ScrollReveal> */}
-        
-        {/* <StaggeredReveal staggerDelay={0.15} direction="up" distance={25}>
-          <ul className="list-disc list-inside mb-6 space-y-2">
-            <li><strong>Inclusivity</strong>: Designs that cater to all, celebrating diversity and individuality.</li>
-            <li><strong>Craftsmanship</strong>: Meticulous attention to detail, ensuring each piece is a masterpiece.</li>
-            <li><strong>Sustainability</strong>: Ethically sourced materials and eco-friendly practices at the core of our operations.</li>
-          </ul>
-        </StaggeredReveal>
-
-        <StaggeredReveal staggerDelay={0.2} direction="up" distance={40}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <MagneticScroll strength={0.15}>
-              <div>
-                <ParallaxImage speed={0.2} direction="up">
-                  <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=60" alt="Unisex Jewelry Collection" className="rounded-lg shadow-md" />
-                </ParallaxImage>
-                <p className="mt-2 text-center text-sm">Elegant pieces that redefine modern jewelry.</p>
-              </div>
-            </MagneticScroll>
-            
-            <MagneticScroll strength={0.15}>
-              <div>
-                <ParallaxImage speed={0.3} direction="down">
-                  <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=60" alt="Craftsmanship in Action" className="rounded-lg shadow-md" />
-                </ParallaxImage>
-                <p className="mt-2 text-center text-sm">Artisans at work, bringing designs to life.</p>
-              </div>
-            </MagneticScroll>
-            
-            <MagneticScroll strength={0.15}>
-              <div>
-                <ParallaxImage speed={0.25} direction="left">
-                  <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=60" alt="Empowering Self-Expression" className="rounded-lg shadow-md" />
-                </ParallaxImage>
-                <p className="mt-2 text-center text-sm">Jewelry that tells your story.</p>
-              </div>
-            </MagneticScroll>
-          </div>
-        </StaggeredReveal> */}
-
         {/* Founders Section */}
         <ScrollReveal direction="up" distance={60}>
           <h2 className="text-2xl font-semibold mt-12 mb-6 text-center" style={{ fontFamily: "'Italiana', serif" }}>Meet Our Founders</h2>
         </ScrollReveal>
 
         <StaggeredReveal staggerDelay={0.3} direction="up" distance={40}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
             {founders.map((founder, index) => (
               <MagneticScroll key={index} strength={0.1}>
-                <div className="bg-gray-50 border-2 border-gray-200 hover:border-black transition-colors duration-300 rounded-lg p-6 text-center">
+                <div className={`${index === 2 ? 'md:col-span-2 md:col-start-2 md:justify-self-center' : ''} bg-gray-50 border-2 border-gray-200 hover:border-black transition-colors duration-300 rounded-lg p-6 text-center`}>
                   <ParallaxImage speed={0.2} direction="up">
                     <div className="mb-4 flex justify-center">
                       <img 

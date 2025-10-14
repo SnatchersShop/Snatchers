@@ -4,6 +4,7 @@ const productSchema = new mongoose.Schema({
   images: [String],
   title: { type: String, required: true },
   price: { type: Number, required: true },
+  offerPrice: { type: Number, default: null },
   rating: { type: Number, default: 0 },
   badgeText: { type: String, default: '' },
   badgeClass: { type: String, default: '' },

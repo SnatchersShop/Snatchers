@@ -11,9 +11,14 @@ import CategoryShop from "./Pages/CategoryShop";
 import ProfilePage from "./Pages/ProfilePage";
 import AuthSuccess from "./Pages/AuthSuccess";
 import AuthError from "./Pages/AuthError";
+import Blog1 from "./Pages/Blog1";
+import Blog2 from "./Pages/Blog2";
+import Blog3 from "./Pages/Blog3";
 import TopOfferBar from "./components/TopOffer";
 import Login from "./Pages/Login";
 import AddProduct from "./Admin/AddProduct";
+import AdminProducts from "./Admin/AdminProducts";
+import EditProduct from "./Admin/EditProduct";
 import Wishlist from "./Pages/Wishlist";
 import { CartProvider } from './contexts/CartContext';
 import Cart from "./Pages/Cart";
@@ -48,8 +53,13 @@ function App() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/auth/success" element={<AuthSuccess />} />
               <Route path="/auth/error" element={<AuthError />} />
+              <Route path="/blog1" element={<Blog1 />} />
+              <Route path="/blog2" element={<Blog2 />} />
+              <Route path="/blog3" element={<Blog3 />} />
               <Route path="/login" element={<Login />} />
               <Route path="/add-product" element={<AddProduct />} />
+              <Route path="/admin/products" element={<AdminProducts />} />
+              <Route path="/admin/edit-product/:id" element={<EditProduct />} />
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/buy-now/:productId" element={<BuyNowComponent />} />

@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { motion } from "framer-motion";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import products from "../Data/ProductData";
+import ProductCard from "./ProductCard";
 
 const renderStars = (rating) => {
   const maxStars = 5;
@@ -37,6 +38,7 @@ const ProductDialog = () => {
   const [wishlist, setWishlist] = useState([]);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [similarProducts, setSimilarProducts] = useState([]);
   const { getSession } = useAuth();
 
   useEffect(() => {
@@ -149,6 +151,60 @@ const ProductDialog = () => {
     fetchData();
   }, [productId, getSession]);
 
+  // After product is loaded, fetch other products and filter by same category
+  useEffect(() => {
+    if (!product) return;
+    let mounted = true;
+    const loadSimilar = async () => {
+      const sameCategory = (a, b) => {
+        if (!a || !b) return false;
+        const norm = (v) => (Array.isArray(v) ? v.map(String).map(s => s.toLowerCase()) : String(v).toLowerCase());
+        const na = norm(a);
+        const nb = norm(b);
+        if (Array.isArray(na)) return na.includes(nb);
+        if (Array.isArray(nb)) return nb.includes(na);
+        return na === nb;
+      };
+      try {
+        const res = await axios.get('/api/products');
+        if (!mounted) return;
+        const all = Array.isArray(res.data) ? res.data : [];
+        const similar = all
+          .filter((p) => String(p._id) !== String(product._id) && sameCategory(p.category, product.category))
+          .slice(0, 6)
+          .map((p) => ({
+            _id: p._id,
+            title: p.title,
+            price: p.price,
+            offerPrice: p.offerPrice ?? null,
+            rating: p.rating,
+            images: p.images || [],
+            badgeText: p.badgeText,
+            badgeClass: p.badgeClass,
+          }));
+        setSimilarProducts(similar);
+      } catch (err) {
+        console.warn('Failed to fetch products for similar list, using local fallback', err?.message || err);
+        const fallback = products
+          .filter((p) => String(p.id || p._id) !== String(product._id) && sameCategory(p.category, product.category))
+          .slice(0, 6)
+          .map((p) => ({
+            _id: p._id || p.id?.toString?.() || `${p.title}-${Math.random()}`,
+            title: p.title,
+            price: p.price,
+            offerPrice: p.offerPrice || null,
+            rating: p.rating,
+            images: p.images || [],
+            badgeText: p.badgeText,
+            badgeClass: p.badgeClass,
+          }));
+        if (mounted) setSimilarProducts(fallback);
+      }
+    };
+    loadSimilar();
+    return () => (mounted = false);
+  }, [product]);
+
   const isInCart = product ? cart.includes(product._id) : false;
   const isWishlisted = product ? wishlist.includes(product._id) : false;
 
@@ -198,6 +254,46 @@ const ProductDialog = () => {
       console.error("Error updating cart:", err);
       // If API fails, show a message to the user
       alert("Unable to update cart. Please try again later or contact support.");
+    }
+  };
+
+  // Helpers for similar products list
+  const addToCartById = async (prod) => {
+    if (!token) { alert('Please login to add to cart'); return; }
+    try {
+      await axios.post(`/api/cart/${prod._id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setCart((prev) => Array.from(new Set([...prev, prod._id])));
+    } catch (err) {
+      console.error('Error adding to cart:', err);
+      alert('Unable to add to cart. Please try again later.');
+    }
+  };
+
+  const removeFromCartById = async (prodId) => {
+    if (!token) { alert('Please login to modify cart'); return; }
+    try {
+      await axios.delete(`/api/cart/${prodId}`, { headers: { Authorization: `Bearer ${token}` } });
+      setCart((prev) => prev.filter((id) => id !== prodId));
+    } catch (err) {
+      console.error('Error removing from cart:', err);
+      alert('Unable to remove from cart.');
+    }
+  };
+
+  const toggleWishlistById = async (prod) => {
+    if (!token) { alert('Please login to manage wishlist'); return; }
+    try {
+      if (wishlist.includes(prod._id)) {
+        await axios.delete(`/api/wishlist/${prod._id}`, { headers: { Authorization: `Bearer ${token}` } });
+        setWishlist((prev) => prev.filter((id) => id !== prod._id));
+      } else {
+        await axios.post(`/api/wishlist/${prod._id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        setWishlist((prev) => Array.from(new Set([...prev, prod._id])));
+      }
+      window.dispatchEvent(new Event('wishlist:changed'));
+    } catch (err) {
+      console.error('Error toggling wishlist:', err);
+      alert('Unable to update wishlist.');
     }
   };
 
@@ -554,6 +650,32 @@ const ProductDialog = () => {
           </div>
         </motion.div>
       </div>
+      {/* Similar Products Section */}
+      {similarProducts && similarProducts.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h2 className="text-2xl font-semibold mb-4">Similar Products</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {similarProducts.map((sp) => (
+              <ProductCard
+                key={sp._id}
+                image={sp.images?.[0] || '/fallback-image.jpg'}
+                title={sp.title}
+                price={sp.price}
+                offerPrice={sp.offerPrice}
+                rating={sp.rating}
+                badgeText={sp.badgeText}
+                badgeClass={sp.badgeClass}
+                onClick={() => navigate(`/product/${sp._id}`)}
+                onAddToCart={() => addToCartById(sp)}
+                onRemoveFromCart={() => removeFromCartById(sp._id)}
+                isInCart={cart.includes(sp._id)}
+                onToggleWishlist={() => toggleWishlistById(sp)}
+                wishlisted={wishlist.includes(sp._id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
