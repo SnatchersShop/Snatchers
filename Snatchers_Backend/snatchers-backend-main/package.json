@@ -7,8 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "validate-config": "node ./bin/validate-config.js",
-  "migrate:add-offerPrice": "node ./bin/migrate-add-offerPrice.js",
-  "migrate:add-passwords": "node ./bin/migrate-add-passwords.js",
+    "migrate:add-offerPrice": "node ./bin/migrate-add-offerPrice.js",
+    "migrate:add-passwords": "node ./bin/migrate-add-passwords.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -26,18 +26,19 @@
     "aws-jwt-verify": "^3.1.0",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
+    "connect-mongo": "^4.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
     "fuse.js": "^7.1.0",
+    "google-auth-library": "^10.4.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.1",
     "multer": "^2.0.1",
     "multer-storage-cloudinary": "^4.0.0",
     "openid-client": "^5.7.0",
-    "razorpay": "^2.9.6",
-    "connect-mongo": "^4.6.0"
+    "razorpay": "^2.9.6"
   }
 }
