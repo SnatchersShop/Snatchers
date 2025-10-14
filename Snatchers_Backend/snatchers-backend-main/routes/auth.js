@@ -56,7 +56,8 @@ router.post('/login', async (req, res) => {
   // Mode 2: Email/password login
   if (email && password) {
     try {
-      const user = await User.findOne({ email }).exec();
+  const emailNormalized = String(email || '').trim().toLowerCase();
+  const user = await User.findOne({ email: { $regex: new RegExp('^' + emailNormalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } }).exec();
       if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
       const stored = user.password;

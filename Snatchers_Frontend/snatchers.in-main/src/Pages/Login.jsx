@@ -38,27 +38,25 @@ export default function Auth() {
       return;
     }
     try {
-      const session = await login(email, password);
-      const idToken = session.getIdToken().getJwtToken();
-
-      // If server-side auth is enabled, attempt server login with email/password
+      // If server-side auth is enabled, call the backend directly with email/password
       if (process.env.REACT_APP_USE_SERVER_AUTH === 'true') {
         try {
-          // Call server with email/password (server will create session cookie)
-          const res = await axios.post('/api/login', { email, password }, { withCredentials: true });
-          const data = res.data;
-          console.log('Server login result:', data);
+          const emailNormalized = String(email || '').trim().toLowerCase();
+          const res = await axios.post('/api/login', { email: emailNormalized, password }, { withCredentials: true });
+          console.log('Server login result:', res.data);
           toast.success('Login successful!');
           setTimeout(() => navigate('/'), 1000);
           return;
         } catch (err) {
           const msg = err?.response?.data?.error || err.message || 'Unknown error';
-          toast.error('Backend error: ' + msg);
+          toast.error('Auth error: ' + msg);
           return;
         }
       }
 
-      // Otherwise use Cognito idToken flow as before
+      // Otherwise use Cognito auth (SPA) as before
+      const session = await login(email, password);
+      const idToken = session.getIdToken().getJwtToken();
       try {
         const res = await axios.post(`/api/login`, { idToken });
         const data = res.data;
