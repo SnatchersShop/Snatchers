@@ -120,6 +120,7 @@ export default function Auth() {
 
           <input value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="Email" className="mb-2 p-2 border" />
           <input value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="Password" type="password" className="mb-4 p-2 border" />
+          <div className="text-sm text-gray-600 mb-3">Don't have an account? <a href="/register" className="text-red-600 font-semibold">Register</a></div>
           <button
             onClick={handleAuth}
             className="w-full py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition"

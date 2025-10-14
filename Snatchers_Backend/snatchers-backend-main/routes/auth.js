@@ -150,4 +150,44 @@ router.post('/google-login', async (req, res) => {
   }
 });
 
+// Register new user with email/password
+router.post('/register', async (req, res) => {
+  const { email, password, name } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+
+  try {
+    const emailNormalized = String(email || '').trim().toLowerCase();
+    // check existing user by email (case-insensitive)
+  // safe escape for regex special chars
+  const esc = emailNormalized.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+  const existing = await User.findOne({ email: { $regex: new RegExp('^' + esc + '$', 'i') } }).exec();
+    if (existing) return res.status(409).json({ error: 'User already exists' });
+
+    const hash = await bcrypt.hash(String(password), 10);
+
+    // generate a uid if not provided (use email-based uid for simplicity)
+    const uid = `user-${Date.now()}`;
+
+    const userDoc = new User({ uid, email: emailNormalized, name: name || '', password: hash });
+    await userDoc.save();
+
+    // create server session if available
+    try {
+      if (req.session) {
+        req.session.userInfo = { uid: userDoc.uid, email: userDoc.email, name: userDoc.name, photoURL: userDoc.photoURL };
+        req.session.save?.(() => {});
+      }
+    } catch (e) {
+      console.warn('Failed to create session after register', e);
+    }
+
+    return res.status(201).json({ user: userDoc });
+  } catch (err) {
+    console.error('Register error:', err);
+    // duplicate key error may happen concurrently
+    if (err && err.code === 11000) return res.status(409).json({ error: 'User already exists' });
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;

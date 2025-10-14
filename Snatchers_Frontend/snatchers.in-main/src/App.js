@@ -16,6 +16,7 @@ import Blog2 from "./Pages/Blog2";
 import Blog3 from "./Pages/Blog3";
 import TopOfferBar from "./components/TopOffer";
 import Login from "./Pages/Login";
+import Register from "./Pages/Register";
 import AddProduct from "./Admin/AddProduct";
 import AdminProducts from "./Admin/AdminProducts";
 import EditProduct from "./Admin/EditProduct";
@@ -57,6 +58,7 @@ function App() {
               <Route path="/blog2" element={<Blog2 />} />
               <Route path="/blog3" element={<Blog3 />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/add-product" element={<AddProduct />} />
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/edit-product/:id" element={<EditProduct />} />
