@@ -29,7 +29,7 @@ const Navbar = () => {
 
     if (value.length > 0) {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/search`, {
+  const res = await axios.get(`/search`, {
           params: { q: value }
         });
         setSearchResults(res.data);
@@ -81,10 +81,10 @@ const Navbar = () => {
         const token = await currentUser.getIdToken();
 
         const [wishlistRes, cartRes] = await Promise.all([
-          axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist`, {
+          axios.get(`/api/wishlist`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/cart`, {
+          axios.get(`/api/cart`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);

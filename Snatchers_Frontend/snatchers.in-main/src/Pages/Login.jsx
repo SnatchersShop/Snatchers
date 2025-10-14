@@ -4,42 +4,20 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import axios from 'axios';
 
 export default function Auth() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const useDemo = process.env.REACT_APP_DEMO_AUTH === 'true';
-  const [email, setEmail] = useState(useDemo ? 'test@local' : '');
-  const [password, setPassword] = useState(useDemo ? 'password' : '');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [existingServerUser, setExistingServerUser] = useState(null);
 
   async function handleAuth() {
     // If server-side auth is enabled, redirect to backend's OIDC login route
     const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
-    const useDemo = process.env.REACT_APP_DEMO_AUTH === 'true';
     if (useServer) {
-      if (useDemo) {
-        // Demo login: POST to /demo/login to create a server session for testing
-        try {
-          const res = await fetch('/demo/login', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, name: email.split('@')[0] }),
-          });
-          if (res.ok) {
-            navigate('/profile');
-            return;
-          }
-          const err = await res.json().catch(() => ({}));
-          toast.error('Demo login failed: ' + (err.error || 'unknown'));
-        } catch (e) {
-          toast.error('Demo login network error');
-        }
-        return;
-      }
-
-      // If not using demo, navigate to backend OIDC login URL
+      // Redirect to backend OIDC login URL
       let backend = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/$/, '');
       if (!backend) {
         try {
@@ -61,34 +39,25 @@ export default function Auth() {
     try {
       const session = await login(email, password);
       const idToken = session.getIdToken().getJwtToken();
+      try {
+  const res = await axios.post(`/api/login`, { idToken });
+  const data = res.data;
+        localStorage.setItem("token", data.token); // 🔐 Store server JWT
 
-      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
+        // 🔽 Fetch user data using the server JWT
+        const userRes = await axios.get(`/api/user/me`, {
+          headers: { Authorization: `Bearer ${data.token}` },
+        });
+        const userData = userRes.data;
+        console.log("Authenticated user:", userData);
 
-      if (!res.ok) {
-        const error = await res.json();
-        toast.error("Backend error: " + (error.error || "Unknown error"));
+        toast.success("Login successful!");
+        setTimeout(() => navigate("/"), 1500);
+      } catch (err) {
+        const msg = err?.response?.data?.error || err.message || 'Unknown error';
+        toast.error("Backend error: " + msg);
         return;
       }
-
-      const data = await res.json();
-      localStorage.setItem("token", data.token); // 🔐 Store server JWT
-
-      // 🔽 Fetch user data using the server JWT
-      const userRes = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/user/me`, {
-        headers: {
-          Authorization: `Bearer ${data.token}`,
-        },
-      });
-
-      const userData = await userRes.json();
-      console.log("Authenticated user:", userData);
-
-      toast.success("Login successful!");
-      setTimeout(() => navigate("/"), 1500);
     } catch (error) {
       toast.error("Auth error: " + error.message);
     }
@@ -101,7 +70,7 @@ export default function Auth() {
     if (!useServer) return;
     (async () => {
       try {
-        const res = await fetch(`/api/user/me`, { credentials: 'include' });
+        const res = await fetch(`/api/user/me`, { credentials: 'include', cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           setExistingServerUser(data.user || data);

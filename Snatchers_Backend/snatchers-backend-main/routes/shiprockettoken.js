@@ -1,5 +1,4 @@
 import express from "express";
-import fetch from "node-fetch";
 import Product from "../models/Product.js"; // Adjust path as needed
 import mongoose from "mongoose";
 const router = express.Router();

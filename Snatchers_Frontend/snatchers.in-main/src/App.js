@@ -10,6 +10,7 @@ import ProductDialog from "./UI/ProductDialog";
 import CategoryShop from "./Pages/CategoryShop";
 import ProfilePage from "./Pages/ProfilePage";
 import AuthSuccess from "./Pages/AuthSuccess";
+import AuthError from "./Pages/AuthError";
 import TopOfferBar from "./components/TopOffer";
 import Login from "./Pages/Login";
 import AddProduct from "./Admin/AddProduct";
@@ -46,6 +47,7 @@ function App() {
               <Route path="/category-shop" element={<CategoryShop />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/auth/success" element={<AuthSuccess />} />
+              <Route path="/auth/error" element={<AuthError />} />
               <Route path="/login" element={<Login />} />
               <Route path="/add-product" element={<AddProduct />} />
               <Route path="/wishlist" element={<Wishlist />} />

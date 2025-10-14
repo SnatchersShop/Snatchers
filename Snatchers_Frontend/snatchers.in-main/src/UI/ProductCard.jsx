@@ -1,5 +1,15 @@
 import React from "react";
+import PropTypes from 'prop-types';
 import { FaHeart, FaRegHeart } from "react-icons/fa";
+
+// Simple currency formatter (INR). Keeps no fractional digits to match original UI.
+const formatCurrency = (value) => {
+  try {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+  } catch (e) {
+    return `₹${value}`;
+  }
+};
 
 const ProductCard = ({
   image,
@@ -84,7 +94,11 @@ const ProductCard = ({
         </h2>
 
         {/* Rating stars */}
-        <div className="text-yellow-400 text-xs sm:text-sm mb-1 hidden sm:block">
+        <div
+          className="text-yellow-400 text-xs sm:text-sm mb-1 hidden sm:block"
+          role="img"
+          aria-label={`Rating: ${rating} out of 5 stars`}
+        >
           {Array.from({ length: 5 }).map((_, i) => (
             <i key={i} className={`fa fa-star ${i < rating ? "opacity-100" : "opacity-30"} transition-opacity duration-400 ease-in-out`} />
           ))}
@@ -94,12 +108,12 @@ const ProductCard = ({
         <div className="mb-2">
           {offerPrice ? (
             <div className="flex items-baseline gap-3">
-              <span className="text-sm text-gray-500 line-through">₹{price}</span>
-              <span className="text-black font-semibold text-sm sm:text-base">₹{offerPrice}</span>
+              <span className="text-sm text-gray-500 line-through">{formatCurrency(price)}</span>
+              <span className="text-black font-semibold text-sm sm:text-base">{formatCurrency(offerPrice)}</span>
               <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded ml-2">Offer</span>
             </div>
           ) : (
-            <span className="block text-black font-semibold text-sm sm:text-base mb-2">₹{price}</span>
+            <span className="block text-black font-semibold text-sm sm:text-base mb-2">{formatCurrency(price)}</span>
           )}
         </div>
 
@@ -116,6 +130,42 @@ const ProductCard = ({
       </div>
     </div>
   );
+};
+
+ProductCard.propTypes = {
+  image: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  price: PropTypes.number.isRequired,
+  offerPrice: PropTypes.number,
+  rating: PropTypes.number,
+  onAddToCart: PropTypes.func,
+  onRemoveFromCart: PropTypes.func,
+  isInCart: PropTypes.bool,
+  badgeText: PropTypes.string,
+  badgeClass: PropTypes.string,
+  onClick: PropTypes.func,
+  onQuickView: PropTypes.func,
+  onCompare: PropTypes.func,
+  wishlisted: PropTypes.bool,
+  onToggleWishlist: PropTypes.func,
+};
+
+ProductCard.propTypes = {
+  image: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  price: PropTypes.number.isRequired,
+  offerPrice: PropTypes.number,
+  rating: PropTypes.number,
+  onAddToCart: PropTypes.func,
+  onRemoveFromCart: PropTypes.func,
+  isInCart: PropTypes.bool,
+  badgeText: PropTypes.string,
+  badgeClass: PropTypes.string,
+  onClick: PropTypes.func,
+  onQuickView: PropTypes.func,
+  onCompare: PropTypes.func,
+  wishlisted: PropTypes.bool,
+  onToggleWishlist: PropTypes.func,
 };
 
 export default ProductCard;

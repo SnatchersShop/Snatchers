@@ -22,7 +22,7 @@ export default function ProductSection({ title = 'Products', limit = 12 }) {
       setLoading(true);
       setError(null);
       try {
-        const apiBase = process.env.REACT_APP_API_BASE_URL || '';
+  const apiBase = '';
         const res = await axios.get(`${apiBase}/api/products`);
         if (!mounted) return;
         setProducts(Array.isArray(res.data) ? res.data.slice(0, limit) : []);

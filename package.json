@@ -1,0 +1,13 @@
+{
+  "name": "snatchers-monorepo-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm --prefix ./Snatchers_Backend/snatchers-backend-main start\" \"npm --prefix ./Snatchers_Frontend/snatchers.in-main start\"",
+    "start:backend": "npm --prefix ./Snatchers_Backend/snatchers-backend-main start",
+    "start:frontend": "npm --prefix ./Snatchers_Frontend/snatchers.in-main start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

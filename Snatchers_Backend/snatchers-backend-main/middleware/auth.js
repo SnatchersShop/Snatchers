@@ -14,6 +14,26 @@ function createVerifier() {
 }
 
 const verifyToken = async (req, res, next) => {
+  // First, allow session-based authentication (server session)
+  try {
+    if (req.session && req.session.userInfo) {
+      // Map session userInfo to an object similar to Cognito JWT payload so
+      // downstream code can use `req.user.sub` / `req.user.email` etc.
+      const s = req.session.userInfo;
+      req.user = {
+        sub: s.uid || s.sub || s.uid,
+        email: s.email,
+        name: s.name,
+        picture: s.picture || s.photoURL || s.photoUrl,
+        // keep original session payload for reference
+        _session: s,
+      };
+      return next();
+    }
+  } catch (e) {
+    // ignore and continue to token verification
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

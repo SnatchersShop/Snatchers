@@ -6,6 +6,7 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import path from 'path';
 import { Issuer, generators } from 'openid-client';
 
@@ -56,28 +57,94 @@ app.use(
 
 app.use(express.json());
 
-// Session middleware (required for OIDC flow state/nonce storage)
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'some secret',
-    resave: false,
-    saveUninitialized: false,
-    // For local development we need to allow non-secure cookies so the browser will accept them on http://localhost.
-    // In production this will use secure cookies.
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: 'lax',
-    },
-  })
-);
+// Disable ETag/conditional requests for API endpoints to avoid 304 responses
+// interfering with credentialed session checks in the SPA during local dev.
+app.disable && app.disable('etag');
 
-// View engine for simple demo pages
+// Ensure API and auth endpoints are not cached by the browser. Some browsers may
+// re-use cached 304 responses which causes the SPA to think the session is missing.
+app.use((req, res, next) => {
+  try {
+    if (req.path && (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path === '/callback')) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+  } catch (e) {}
+  next();
+});
+
+// Session middleware (required for OIDC flow state/nonce storage)
+// Configure session cookie lifetime. If SESSION_COOKIE_DAYS is provided use it; otherwise
+// for development default to 30 days so sessions persist until explicit logout.
+const sessionCookieDays = parseInt(process.env.SESSION_COOKIE_DAYS || '', 10);
+const defaultCookieDays = Number.isFinite(sessionCookieDays) ? sessionCookieDays : 30;
+const cookieMaxAge = process.env.SESSION_MAX_AGE_MS
+  ? parseInt(process.env.SESSION_MAX_AGE_MS, 10)
+  : 1000 * 60 * 60 * 24 * defaultCookieDays; // ms
+
+// Detect development mode
+const isDevMode = process.env.NODE_ENV !== 'production';
+
+// For local/development environments we must not use secure cookies (they won't be sent over http).
+const cookieSecure = !isDevMode;
+
+const sessionOptions = {
+  secret: process.env.SESSION_SECRET || 'some secret',
+  resave: false,
+  saveUninitialized: false,
+  // Refresh session cookie on every response to implement sliding expiration
+  rolling: true,
+  cookie: {
+    secure: cookieSecure,
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: cookieMaxAge,
+  },
+};
+
+// If Mongo is available, use it as session store so sessions persist across restarts
+if (process.env.MONGO_URI) {
+  sessionOptions.store = MongoStore.create({ mongoUrl: process.env.MONGO_URI });
+}
+
+app.use(session(sessionOptions));
+
+// Refresh cookie maxAge on each request when a session exists (sliding session)
+app.use((req, res, next) => {
+  try {
+    if (req.session && req.session.userInfo && req.session.cookie) {
+      req.session.cookie.maxAge = cookieMaxAge;
+    }
+  } catch (e) {
+    // ignore
+  }
+  next();
+});
+
+console.log(`Session cookie settings: secure=${cookieSecure}, maxAge=${cookieMaxAge}ms, devMode=${isDevMode}`);
+
+// (removed dev-only debug header to restore normal behavior)
+
+// View engine for simple pages
 app.set('views', path.join(process.cwd(), 'views'));
 app.set('view engine', 'ejs');
 
 // OpenID Connect / Cognito client init
 let oidcClient;
+// Parse configured Cognito redirect URIs (support comma-separated list)
+const cognitoRedirectUris = (process.env.COGNITO_REDIRECT_URI || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+function isValidRedirectUri(uri) {
+  // Accept only exact matches against configured Cognito redirect URIs
+  if (!uri) return false;
+  if (cognitoRedirectUris.length === 0) return false;
+  return cognitoRedirectUris.includes(uri);
+}
+
 // In-memory temporary token store for callback -> SPA handshake
 const tempAuthTokens = new Map(); // token => { userInfo, tokenSet, expires }
 async function initOidc() {
@@ -88,7 +155,10 @@ async function initOidc() {
     oidcClient = new issuer.Client({
       client_id: process.env.COGNITO_CLIENT_ID,
       client_secret: process.env.COGNITO_CLIENT_SECRET,
-      redirect_uris: [process.env.COGNITO_REDIRECT_URI || 'https://d84l1y8p4kdic.cloudfront.net'],
+      // Use parsed redirect URIs; fall back to single env value or a sensible default
+      redirect_uris: cognitoRedirectUris.length
+        ? cognitoRedirectUris
+        : [(process.env.COGNITO_REDIRECT_URI || 'https://d84l1y8p4kdic.cloudfront.net')],
       response_types: ['code'],
     });
     console.log('✅ OIDC client initialized');
@@ -149,41 +219,35 @@ app.get('/login', (req, res) => {
   const state = generators.state();
   req.session.nonce = nonce;
   req.session.state = state;
-  // Use the exact redirect URI from env to avoid redirect_mismatch errors
-  const redirectUri = process.env.COGNITO_REDIRECT_URI || 'http://localhost:5000/callback';
-  console.log('[OIDC] /login requested — using redirectUri:', redirectUri);
+  // Pick candidate redirect URI. Prefer the explicit configured list, then env value, then default.
+  const redirectCandidate =
+    cognitoRedirectUris.length > 0
+      ? cognitoRedirectUris[0]
+      : (process.env.COGNITO_REDIRECT_URI || 'http://localhost:5000/callback');
+
+  console.log('[OIDC] /login requested — using redirect candidate:', redirectCandidate);
+
+  // IMPORTANT: do not redirect the user to Cognito if the redirect URI is not an exact
+  // match of the configured Cognito redirect URIs. If misconfigured, send the user back
+  // to the SPA with an error message instead of letting Cognito show its own error page.
+  if (!isValidRedirectUri(redirectCandidate)) {
+    console.error('[OIDC] redirect URI mismatch — refusing to initiate auth to prevent Cognito error page.');
+    const msg = encodeURIComponent('redirect_mismatch');
+    return res.redirect(`${frontend}/auth/error?error=${msg}`);
+  }
+
   const authUrl = oidcClient.authorizationUrl({
     scope: 'openid email phone',
     state,
     nonce,
-    redirect_uri: redirectUri,
+    redirect_uri: redirectCandidate,
   });
   // Log auth URL partially (avoid printing secrets)
   console.log('[OIDC] redirecting to Cognito auth URL (partial):', authUrl.replace(/(redirect_uri=)[^&]*/,'$1REDACTED'));
   res.redirect(authUrl);
 });
 
-// Demo auth endpoints for local testing
-if (process.env.DEMO_AUTH === 'true' || process.env.NODE_ENV !== 'production') {
-  // Simple demo login: accepts { email, name } and creates a session for testing
-  app.post('/demo/login', express.json(), (req, res) => {
-    const { email, name } = req.body || {};
-    if (!email) return res.status(400).json({ error: 'email required for demo login' });
-    const demoUser = {
-      email,
-      name: name || email.split('@')[0],
-      uid: `demo_${Date.now()}`,
-      picture: '',
-    };
-    req.session.userInfo = demoUser;
-    return res.json({ user: demoUser });
-  });
-
-  app.get('/demo/logout', (req, res) => {
-    req.session.destroy(() => {});
-    res.json({ ok: true });
-  });
-}
+// (demo endpoints removed; use normal login routes and OIDC flow)
 
 // Callback route - Cognito will redirect back here after auth
 app.get('/callback', async (req, res) => {
@@ -213,10 +277,13 @@ app.get('/callback', async (req, res) => {
   } catch (err) {
     console.error('Callback error:', err?.message || err);
     // If the error indicates a redirect mismatch, explain and stop
-    if (err && (err.message || '').toLowerCase().includes('redirect_mismatch')) {
-      return res.status(400).send('<h1>Redirect mismatch</h1><p>The redirect URI used by this application does not match the one configured in Cognito. Please ensure <code>COGNITO_REDIRECT_URI</code> is registered in the Cognito app client settings and that it exactly matches (including protocol).</p>');
-    }
-    res.redirect('/');
+      if (err && (err.message || '').toLowerCase().includes('redirect_mismatch')) {
+        console.error('[OIDC] callback redirect_mismatch detected — redirecting to SPA error page');
+        const msg = encodeURIComponent('redirect_mismatch');
+        return res.redirect(`${frontend}/auth/error?error=${msg}`);
+      }
+      // For other errors, send user back to SPA root but log server side.
+      res.redirect(frontend);
   }
 });
 
@@ -247,6 +314,10 @@ app.post('/auth/claim', async (req, res) => {
     // Establish session and mark token consumed for a short grace period to avoid race conditions
     req.session.userInfo = entry.userInfo;
     req.session.tokenSet = entry.tokenSet;
+    // ensure session cookie persists according to configured maxAge
+    try {
+      if (req.session && req.session.cookie) req.session.cookie.maxAge = cookieMaxAge;
+    } catch (e) {}
     entry.consumed = true;
     // allow repeated claims for 30 seconds after first consumption
     entry.expires = Date.now() + 1000 * 30;

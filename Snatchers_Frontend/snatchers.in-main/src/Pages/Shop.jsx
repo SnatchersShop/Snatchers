@@ -26,7 +26,7 @@ const Shop = () => {
         
         // Always fetch products (no auth required)
         try {
-          const productsRes = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/products`);
+          const productsRes = await axios.get(`/api/products`);
           setProducts(productsRes.data);
         } catch (err) {
           console.warn('Shop: product API failed, using local fallback', err?.message || err);
@@ -54,10 +54,10 @@ const Shop = () => {
 
           try {
             const [wishlistRes, cartRes] = await Promise.all([
-              axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist`, {
+              axios.get(`/api/wishlist`, {
                 headers: { Authorization: `Bearer ${idToken}` },
               }),
-              axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/cart`, {
+              axios.get(`/api/cart`, {
                 headers: { Authorization: `Bearer ${idToken}` },
               }),
             ]);
@@ -98,7 +98,7 @@ const Shop = () => {
     }
 
     const isWishlisted = wishlist.includes(productId);
-    const url = `${process.env.REACT_APP_API_BASE_URL}/api/wishlist/${productId}`;
+  const url = `/api/wishlist/${productId}`;
 
     try {
       if (isWishlisted) {
@@ -127,7 +127,7 @@ const Shop = () => {
     }
 
     const isInCart = cart.includes(productId);
-    const url = `${process.env.REACT_APP_API_BASE_URL}/api/cart/${productId}`;
+  const url = `/api/cart/${productId}`;
 
     try {
       if (isInCart) {

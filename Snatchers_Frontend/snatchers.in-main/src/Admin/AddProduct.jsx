@@ -40,7 +40,7 @@ const AddProduct = () => {
     });
 
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/api/products`, formData);
+  const res = await axios.post(`/api/products`, formData);
       console.log(res.data);
       alert('✅ Product uploaded!');
     } catch (err) {

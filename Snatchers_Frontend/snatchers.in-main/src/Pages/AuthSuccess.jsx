@@ -24,7 +24,7 @@ export default function AuthSuccess() {
       inFlight = true;
       try {
         const useServerAuth = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
-        const claimUrl = useServerAuth ? '/auth/claim' : `${process.env.REACT_APP_API_BASE_URL}/auth/claim`;
+  const claimUrl = useServerAuth ? '/auth/claim' : '/auth/claim';
         const res = await fetch(claimUrl, {
           method: 'POST',
           credentials: 'include',

@@ -39,7 +39,7 @@ const DateNight = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/products`);
+  const res = await axios.get(`/api/products`);
         setProducts(res.data);
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -52,7 +52,7 @@ const DateNight = () => {
         return;
       }
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist`, {
+  const res = await axios.get(`/api/wishlist`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const productIds = res.data.map((p) => p._id);
@@ -69,7 +69,7 @@ const DateNight = () => {
         return;
       }
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/cart`, {
+  const res = await axios.get(`/api/cart`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const productIds = res.data.map((item) =>
@@ -93,7 +93,7 @@ const DateNight = () => {
       return;
     }
     const isWishlisted = wishlist.includes(productId);
-    const url = `${process.env.REACT_APP_API_BASE_URL}/api/wishlist/${productId}`;
+  const url = `/api/wishlist/${productId}`;
     try {
       if (isWishlisted) {
         await axios.delete(url, {
@@ -119,7 +119,7 @@ const DateNight = () => {
       return;
     }
     const isInCart = cart.includes(productId);
-    const url = `${process.env.REACT_APP_API_BASE_URL}/api/cart/${productId}`;
+  const url = `/api/cart/${productId}`;
     try {
       if (isInCart) {
         await axios.delete(url, {

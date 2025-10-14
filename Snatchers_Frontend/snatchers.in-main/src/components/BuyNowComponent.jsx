@@ -31,7 +31,7 @@ const BuyNowComponent = () => {
     if (useServer) {
       // Try same-origin request which will send HTTP-only session cookie set by backend
       axios
-        .get(`/api/user/me`, { withCredentials: true })
+        .get(`/api/user/me`, { withCredentials: true, headers: { 'Cache-Control': 'no-store' } })
         .then((response) => {
           const user = response.data && response.data.user ? response.data.user : response.data;
           setForm((prev) => ({ ...prev, email: user.email || '' }));
@@ -75,7 +75,7 @@ const BuyNowComponent = () => {
   useEffect(() => {
     setLoadingProduct(true);
     axios
-      .get(`${API_BASE_URL}/api/products/${productId}`)
+      .get(`/api/products/${productId}`)
       .then((res) => {
         setProduct(res.data);
         setLoadingProduct(false);
@@ -110,10 +110,7 @@ const BuyNowComponent = () => {
         currency: "INR",
         receipt: "rcptid_" + Date.now(),
       };
-      const paymentRes = await axios.post(
-        `${API_BASE_URL}/api/payment/create-order`,
-        paymentPayload
-      );
+      const paymentRes = await axios.post(`/api/payment/create-order`, paymentPayload);
       const { id: razorpayOrderId, amount, currency } = paymentRes.data.order;
 
       const options = {
@@ -159,10 +156,7 @@ const BuyNowComponent = () => {
               payment_id,
             };
 
-            const responseSR = await axios.post(
-              `${API_BASE_URL}/api/shiprocket/create-order`,
-              payload
-            );
+            const responseSR = await axios.post(`/api/shiprocket/create-order`, payload);
 
             // Store order locally for profile page
             const orderData = {
@@ -193,11 +187,7 @@ const BuyNowComponent = () => {
             try {
               const token = localStorage.getItem("token");
               if (token) {
-                await axios.post(
-                  `${API_BASE_URL}/api/orders`,
-                  orderData,
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
+                await axios.post(`/api/orders`, orderData, { headers: { Authorization: `Bearer ${token}` } });
                 console.log('Order saved to backend successfully');
               }
             } catch (backendError) {

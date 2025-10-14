@@ -22,7 +22,7 @@ const NewProducts = () => {
         const idToken = session ? session.getIdToken().getJwtToken() : null;
         
         // Always fetch products (no auth required)
-        const productRes = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/products`);
+  const productRes = await axios.get(`/api/products`);
         const sorted = productRes.data.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
@@ -34,10 +34,10 @@ const NewProducts = () => {
 
           try {
             const [wishlistRes, cartRes] = await Promise.all([
-              axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist`, {
+              axios.get(`/api/wishlist`, {
                 headers: { Authorization: `Bearer ${idToken}` },
               }),
-              axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/cart`, {
+              axios.get(`/api/cart`, {
                 headers: { Authorization: `Bearer ${idToken}` },
               }),
             ]);
@@ -78,7 +78,7 @@ const NewProducts = () => {
     }
 
     const isWishlisted = wishlist.includes(productId);
-    const url = `${process.env.REACT_APP_API_BASE_URL}/api/wishlist/${productId}`;
+  const url = `/api/wishlist/${productId}`;
 
     try {
       if (isWishlisted) {
@@ -107,7 +107,7 @@ const NewProducts = () => {
     }
 
     const isInCart = cart.includes(productId);
-    const url = `${process.env.REACT_APP_API_BASE_URL}/api/cart/${productId}`;
+  const url = `/api/cart/${productId}`;
 
     try {
       if (isInCart) {
@@ -116,7 +116,7 @@ const NewProducts = () => {
         });
         setCart((prev) => prev.filter((id) => id !== productId));
       } else {
-        await axios.post(`${process.env.REACT_APP_API_BASE_URL}/api/cart/${productId}`, { }, {
+  await axios.post(`/api/cart/${productId}`, { }, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCart((prev) => [...prev, productId]);

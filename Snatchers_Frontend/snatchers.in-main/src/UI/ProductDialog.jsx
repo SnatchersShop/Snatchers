@@ -51,7 +51,7 @@ const ProductDialog = () => {
         setToken(idToken);
       }
 
-        const productUrl = `${process.env.REACT_APP_API_BASE_URL}/api/products/${productId}`;
+  const productUrl = `/api/products/${productId}`;
         console.log("Product URL:", productUrl);
         
         // Always fetch product data (no auth required)
@@ -118,10 +118,10 @@ const ProductDialog = () => {
   if (session && idToken) {
           try {
             const [cartRes, wishlistRes] = await Promise.all([
-              axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/cart`, {
+              axios.get(`/api/cart`, {
                 headers: { Authorization: `Bearer ${idToken}` },
               }),
-              axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist`, {
+              axios.get(`/api/wishlist`, {
                 headers: { Authorization: `Bearer ${idToken}` },
               })
             ]);
@@ -155,7 +155,7 @@ const ProductDialog = () => {
   const toggleWishlist = async () => {
     if (!token || !product) return;
 
-    const url = `${process.env.REACT_APP_API_BASE_URL}/api/wishlist/${product._id}`;
+  const url = `/api/wishlist/${product._id}`;
 
     try {
       if (isWishlisted) {
@@ -180,7 +180,7 @@ const ProductDialog = () => {
   const toggleCart = async () => {
     if (!token || !product) return;
 
-    const url = `${process.env.REACT_APP_API_BASE_URL}/api/cart/${product._id}`;
+  const url = `/api/cart/${product._id}`;
 
     try {
       if (isInCart) {

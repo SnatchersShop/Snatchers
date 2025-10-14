@@ -16,7 +16,7 @@ const ProfilePage = () => {
       try {
         if (useServer) {
           // Use server-side session cookie (HTTP-only) to get user via same-origin request
-          const res = await fetch(`/api/user/me`, { credentials: 'include' });
+          const res = await fetch(`/api/user/me`, { credentials: 'include', cache: 'no-store' });
           if (!res.ok) {
             navigate('/login');
             return;
@@ -35,7 +35,7 @@ const ProfilePage = () => {
           return;
         }
         const res = await fetch(
-          `${process.env.REACT_APP_API_BASE_URL}/api/user/me`,
+          `/api/user/me`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!res.ok) throw new Error('Unauthorized');
@@ -61,7 +61,7 @@ const ProfilePage = () => {
           try {
             const res = await fetch(
               `/api/orders/email/${encodeURIComponent(user.email)}`,
-              { credentials: 'include' }
+              { credentials: 'include', cache: 'no-store' }
             );
             if (res.ok) {
               const data = await res.json();
@@ -77,7 +77,7 @@ const ProfilePage = () => {
         } else if (token) {
           try {
             const res = await fetch(
-              `${process.env.REACT_APP_API_BASE_URL}/api/orders/email/${encodeURIComponent(user.email)}`,
+              `/api/orders/email/${encodeURIComponent(user.email)}`,
               { headers: { Authorization: `Bearer ${token}` } }
             );
             if (res.ok) {

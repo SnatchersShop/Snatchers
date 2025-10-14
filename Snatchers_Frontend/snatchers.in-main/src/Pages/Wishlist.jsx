@@ -33,7 +33,7 @@ const Wishlist = () => {
       if (token) {
         setTokenAvailable(true);
         // Logged-in: fetch from server and also include any local wishlist (merge de-duplicated)
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist`, {
+  const res = await axios.get(`/api/wishlist`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -45,7 +45,7 @@ const Wishlist = () => {
         let localProducts = [];
         if (localIds.length > 0) {
           // Fetch product details in parallel for local ids not present on server
-          const fetches = localIds.map(id => axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/products/${id}`).then(r => r.data).catch(() => null));
+          const fetches = localIds.map(id => axios.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
           const fetched = await Promise.all(fetches);
           localProducts = fetched.filter(Boolean);
         }
@@ -60,7 +60,7 @@ const Wishlist = () => {
           return;
         }
 
-        const fetches = localIds.map(id => axios.get(`${process.env.REACT_APP_API_BASE_URL}/api/products/${id}`).then(r => r.data).catch(() => null));
+  const fetches = localIds.map(id => axios.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
         const fetched = await Promise.all(fetches);
         setWishlist(fetched.filter(Boolean));
       }
@@ -88,7 +88,7 @@ const Wishlist = () => {
       }
 
       if (token) {
-        await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/api/wishlist/${productId}`, {
+  await axios.delete(`/api/wishlist/${productId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
