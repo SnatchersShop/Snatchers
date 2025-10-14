@@ -1,6 +1,21 @@
 // server.js
 import dotenv from 'dotenv';
+import fs from 'fs';
 dotenv.config();
+
+// If MONGO_URI is not provided in the regular .env, try the repository deploy example
+// This helps local dev when envs are stored in deploy/snatchers-backend.env
+try {
+  if (!process.env.MONGO_URI) {
+    const fallbackPath = path.resolve(process.cwd(), '../../deploy/snatchers-backend.env');
+    if (fs.existsSync(fallbackPath)) {
+      console.log(`Loading fallback env file: ${fallbackPath}`);
+      dotenv.config({ path: fallbackPath });
+    }
+  }
+} catch (e) {
+  // ignore
+}
 import express from 'express';
 // import dotenv from 'dotenv';
 import cors from 'cors';
@@ -429,14 +444,33 @@ app.get('/logout', (req, res) => {
 // Note: /api/user/me is now handled earlier as a session-first endpoint.
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ MongoDB connected');
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-})
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
+function redactMongoUri(uri) {
+  if (!uri) return '(none)';
+  // hide password between first ':' after protocol and '@'
+  try {
+    return uri.replace(/(mongodb(?:\+srv)?:\/\/)([^:]+):([^@]+)@/, '$1$2:***@');
+  } catch (e) { return '(redact-error)'; }
+}
+
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+  console.warn('⚠️ MONGO_URI not set. Starting server in NO-DB dev mode. Many API endpoints will be disabled.');
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} (no DB)`));
+} else {
+  mongoose.connect(mongoUri, {
+    // options kept for compatibility warnings - mongoose ignores deprecated options
+  })
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err && err.message ? err.message : err);
+    console.error('Attempted MONGO_URI (redacted):', redactMongoUri(mongoUri));
+    if (err && err.message && err.message.toLowerCase().includes('authentication failed')) {
+      console.error('→ Authentication failed connecting to MongoDB. Check that the username/password in your MONGO_URI are correct, that the user exists in Atlas, and that IP access list allows connections from this host.');
+    }
+    console.error('The server will exit. If you want to run without a DB for dev, unset MONGO_URI or provide a valid one.');
+    process.exit(1);
+  });
+}
