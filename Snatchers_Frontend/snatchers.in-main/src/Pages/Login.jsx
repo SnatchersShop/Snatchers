@@ -40,27 +40,40 @@ export default function Auth() {
     try {
       const session = await login(email, password);
       const idToken = session.getIdToken().getJwtToken();
+
+      // If server-side auth is enabled, attempt server login with email/password
+      if (process.env.REACT_APP_USE_SERVER_AUTH === 'true') {
+        try {
+          // Call server with email/password (server will create session cookie)
+          const res = await axios.post('/api/login', { email, password }, { withCredentials: true });
+          const data = res.data;
+          console.log('Server login result:', data);
+          toast.success('Login successful!');
+          setTimeout(() => navigate('/'), 1000);
+          return;
+        } catch (err) {
+          const msg = err?.response?.data?.error || err.message || 'Unknown error';
+          toast.error('Backend error: ' + msg);
+          return;
+        }
+      }
+
+      // Otherwise use Cognito idToken flow as before
       try {
-  const res = await axios.post(`/api/login`, { idToken });
-  const data = res.data;
-        localStorage.setItem("token", data.token); // 🔐 Store server JWT
-
-        // 🔽 Fetch user data using the server JWT
-        const userRes = await axios.get(`/api/user/me`, {
-          headers: { Authorization: `Bearer ${data.token}` },
-        });
-        const userData = userRes.data;
-        console.log("Authenticated user:", userData);
-
-        toast.success("Login successful!");
-        setTimeout(() => navigate("/"), 1500);
+        const res = await axios.post(`/api/login`, { idToken });
+        const data = res.data;
+        localStorage.setItem('token', data.token);
+        const userRes = await axios.get(`/api/user/me`, { headers: { Authorization: `Bearer ${data.token}` } });
+        console.log('Authenticated user (Cognito):', userRes.data);
+        toast.success('Login successful!');
+        setTimeout(() => navigate('/'), 1500);
       } catch (err) {
         const msg = err?.response?.data?.error || err.message || 'Unknown error';
-        toast.error("Backend error: " + msg);
+        toast.error('Backend error: ' + msg);
         return;
       }
     } catch (error) {
-      toast.error("Auth error: " + error.message);
+      toast.error('Auth error: ' + error.message);
     }
   }
 
