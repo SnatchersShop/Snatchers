@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useEffect } from "react";
+import GoogleSignIn from '../components/GoogleSignIn';
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -114,6 +115,24 @@ export default function Auth() {
           >
             Login
           </button>
+          
+          <div className="mt-4">
+            <p className="text-sm text-gray-500 mb-2">Or sign in with</p>
+            {/* Lazy-load Google sign-in button */}
+            <React.Suspense fallback={<div>Loading sign-in...</div>}>
+              <GoogleSignIn
+                onSuccess={(data) => {
+                  console.log('Google login success', data);
+                  // After server session is established, navigate home
+                  navigate('/');
+                }}
+                onError={(err) => {
+                  console.error('Google login error', err);
+                  toast.error('Google login failed');
+                }}
+              />
+            </React.Suspense>
+          </div>
         </div>
       </div>
     </>
