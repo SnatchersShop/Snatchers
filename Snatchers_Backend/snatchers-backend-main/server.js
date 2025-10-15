@@ -47,7 +47,7 @@ const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://www.snatchers.in"
+  "https://www.snatchers.in",
   "https://zupra.online"
 ];
 
