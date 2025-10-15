@@ -229,10 +229,29 @@ app.use('/api', authRoutes);              // 🔑 Login (POST /api/auth/google)
 // protected `userRoutes` so cookie-based requests don't get intercepted
 // by the JWT `verifyToken` middleware.
 app.get('/api/user/me', (req, res) => {
-  if (!req.session || !req.session.userInfo) {
-    return res.status(401).json({ message: 'Not authenticated' });
+  try {
+    console.log('[Debug] /api/user/me request — Cookie header:', req.headers.cookie);
+    console.log('[Debug] /api/user/me request — sessionID:', req.sessionID);
+    console.log('[Debug] /api/user/me request — req.session present:', !!req.session);
+    // Try to read the session from the store directly
+    try {
+      if (req.sessionStore && req.sessionID) {
+        req.sessionStore.get(req.sessionID, (err, sess) => {
+          if (err) console.error('[Debug] sessionStore.get error:', err);
+          console.log('[Debug] sessionStore.get result for', req.sessionID, sess ? 'FOUND' : 'NOT FOUND');
+        });
+      }
+    } catch (e) {
+      console.warn('[Debug] sessionStore.get threw', e);
+    }
+    if (!req.session || !req.session.userInfo) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    return res.json({ user: req.session.userInfo });
+  } catch (e) {
+    console.error('[Debug] /api/user/me handler error', e);
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res.json({ user: req.session.userInfo });
 });
 
 app.use('/api/user', userRoutes);              // 👤 User routes (POST /api/user, GET /api/user/me)
