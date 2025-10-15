@@ -58,9 +58,13 @@ router.post('/login', async (req, res) => {
     try {
   const emailNormalized = String(email || '').trim().toLowerCase();
   const user = await User.findOne({ email: { $regex: new RegExp('^' + emailNormalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } }).exec();
-      if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+      if (!user) {
+        console.warn(`[Auth] login attempt for non-existent user: ${emailNormalized}`);
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
 
       const stored = user.password;
+      console.log(`[Auth] user found for login: ${user.email} uid=${user.uid} password_present=${!!stored}`);
       let ok = false;
       let needsRehash = false;
 
@@ -71,7 +75,12 @@ router.post('/login', async (req, res) => {
 
       // Heuristic: if stored starts with $2 (bcrypt), use bcrypt.compare
       if (typeof stored === 'string' && stored.startsWith('$2')) {
-        ok = await bcrypt.compare(password, stored);
+        try {
+          ok = await bcrypt.compare(password, stored);
+          console.log('[Auth] bcrypt.compare result for', user.email, ok);
+        } catch (e) {
+          console.error('[Auth] bcrypt.compare failed', e);
+        }
       } else {
         // Plaintext fallback for legacy data: compare and re-hash on success
         if (password === stored) {
