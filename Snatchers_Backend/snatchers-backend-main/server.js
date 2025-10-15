@@ -117,7 +117,10 @@ const sessionOptions = {
   cookie: {
     secure: cookieSecure,
     httpOnly: true,
-    sameSite: 'lax',
+    // Allow overriding SameSite via env for special cases. In production, when
+    // cookies are secure, set SameSite to 'none' so cross-site requests from
+    // the frontend (zupra.online) will include the session cookie.
+    sameSite: process.env.SESSION_SAME_SITE || (cookieSecure ? 'none' : 'lax'),
     maxAge: cookieMaxAge,
   },
 };
