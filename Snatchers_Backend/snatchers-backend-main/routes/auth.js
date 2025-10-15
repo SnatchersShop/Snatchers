@@ -8,6 +8,31 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const router = express.Router();
 
+// Helper to set the session cookie explicitly (works around proxy/header differences)
+function setSessionCookie(req, res) {
+  try {
+    const secureFlag = req.secure || (req.headers && req.headers['x-forwarded-proto'] === 'https');
+    const sessionCookieDays = parseInt(process.env.SESSION_COOKIE_DAYS || '', 10);
+    const defaultCookieDays = Number.isFinite(sessionCookieDays) ? sessionCookieDays : 30;
+    const cookieMaxAge = process.env.SESSION_MAX_AGE_MS
+      ? parseInt(process.env.SESSION_MAX_AGE_MS, 10)
+      : 1000 * 60 * 60 * 24 * defaultCookieDays;
+    const sameSite = process.env.SESSION_SAME_SITE || (secureFlag ? 'none' : 'lax');
+    const cookieOptions = {
+      httpOnly: true,
+      secure: secureFlag,
+      sameSite,
+      maxAge: cookieMaxAge,
+    };
+    if (process.env.SESSION_COOKIE_DOMAIN) cookieOptions.domain = process.env.SESSION_COOKIE_DOMAIN;
+    const cookieName = process.env.SESSION_COOKIE_NAME || 'connect.sid';
+    // set cookie with current session id
+    res.cookie(cookieName, req.sessionID, cookieOptions);
+  } catch (e) {
+    console.warn('Failed to set session cookie explicitly', e);
+  }
+}
+
 // Create verifier lazily so env vars are available at runtime
 function createVerifier() {
   const userPoolId = process.env.COGNITO_USER_POOL_ID;
@@ -108,6 +133,8 @@ router.post('/login', async (req, res) => {
         if (req.session) {
           req.session.userInfo = { uid: user.uid, email: user.email, name: user.name, photoURL: user.photoURL };
           req.session.save?.(() => {});
+              // ensure cookie is set for browsers behind proxies
+              try { setSessionCookie(req, res); } catch (e) {}
         }
       } catch (e) {
         console.warn('Failed to create session for user', user.email, e);
@@ -147,6 +174,7 @@ router.post('/google-login', async (req, res) => {
         req.session.userInfo = { uid: user.uid, email: user.email, name: user.name, photoURL: user.photoURL };
         // Persist session
         req.session.save?.(() => {});
+            try { setSessionCookie(req, res); } catch (e) {}
       }
     } catch (e) {
       console.warn('Failed to establish session after Google login', e);
@@ -185,6 +213,7 @@ router.post('/register', async (req, res) => {
       if (req.session) {
         req.session.userInfo = { uid: userDoc.uid, email: userDoc.email, name: userDoc.name, photoURL: userDoc.photoURL };
         req.session.save?.(() => {});
+            try { setSessionCookie(req, res); } catch (e) {}
       }
     } catch (e) {
       console.warn('Failed to create session after register', e);
