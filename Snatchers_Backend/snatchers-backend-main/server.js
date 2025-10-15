@@ -48,7 +48,11 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = [
   "http://localhost:3000",
   "https://www.snatchers.in",
-  "https://zupra.online"
+  "https://zupra.online",
+  "https://www.zupra.online",
+  // Allow plain HTTP during initial testing/deployment (frontend currently served over HTTP)
+  "http://zupra.online",
+  "http://www.zupra.online",
 ];
 
 app.use(
