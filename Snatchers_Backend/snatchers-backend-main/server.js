@@ -251,7 +251,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Health / diagnostic endpoint
-app.get('/health', async (req, res) => {
+// Health handler function used for both /health and /api/health
+async function healthHandler(req, res) {
   try {
     const mongoState = mongoose.connection.readyState; // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
     const mongoStatus = (() => {
@@ -295,7 +296,10 @@ app.get('/health', async (req, res) => {
   } catch (err) {
     return res.status(500).json({ status: 'error', error: String(err) });
   }
-});
+}
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 // OIDC login route - redirect to Cognito hosted login page
 app.get('/login', (req, res) => {
