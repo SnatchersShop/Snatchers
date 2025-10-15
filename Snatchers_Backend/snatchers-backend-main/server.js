@@ -246,6 +246,10 @@ app.get('/', checkAuth, (req, res) => {
   });
 });
 
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Health / diagnostic endpoint
 app.get('/health', async (req, res) => {
   try {
