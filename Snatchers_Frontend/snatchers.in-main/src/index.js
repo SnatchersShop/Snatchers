@@ -9,9 +9,10 @@ import axios from 'axios';
 
 // Global axios defaults: include credentials so cookies (HTTP-only session) are sent
 axios.defaults.withCredentials = true;
-// Use configured API base URL only in production. In development we prefer the CRA dev
-// proxy (same-origin) so cookies are handled correctly between the SPA and backend.
-if (process.env.NODE_ENV === 'production' && process.env.REACT_APP_API_BASE_URL) {
+// If an API base URL is provided at build time, always use it. This lets the
+// production build target the backend host (for example: https://api.zupra.online)
+// while dev still benefits from the CRA proxy when env var is not set.
+if (process.env.REACT_APP_API_BASE_URL) {
   axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL;
 }
 

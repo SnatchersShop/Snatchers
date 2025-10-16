@@ -29,6 +29,29 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
+## Deployment notes for this project
+
+When building the production bundle you should set the following environment variables at build time:
+
+- `REACT_APP_API_BASE_URL` - the full URL of your backend API (for example: `https://api.zupra.online`). If set, the production bundle will use this as the axios base URL so all `/api/*` requests go to the API host.
+- `REACT_APP_USE_SERVER_AUTH` - set to `true` if you want the app to use server-side session authentication (default: `false`).
+
+Preferred workflow:
+
+1. Build locally (recommended):
+
+```bash
+export REACT_APP_API_BASE_URL=https://api.zupra.online
+export REACT_APP_USE_SERVER_AUTH=true
+npm run build
+```
+
+2. Copy the `build/` folder to your frontend server (e.g. `/var/www/snatchers_frontend`) and reload nginx.
+
+Alternate: build on the frontend server if you prefer. Make sure Node/npm are installed there and set the same env variables before running `npm run build`.
+
+This repository is configured so runtime calls use `/api/...` paths and rely on the API host provided at build-time. If `REACT_APP_API_BASE_URL` is not set, the app will make same-origin requests (useful for local development with CRA proxy).
+
 ### `npm run eject`
 
 **Note: this is a one-way operation. Once you `eject`, you can't go back!**

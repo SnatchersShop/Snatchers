@@ -33,7 +33,9 @@ export default function Auth() {
           backend = 'http://localhost:5000';
         }
       }
-      const loginUrl = `${backend}/login`;
+  // backend may be provided via REACT_APP_API_BASE_URL; ensure we always hit
+  // the API path on the backend which mounts Express routes under `/api`
+  const loginUrl = `${backend.replace(/\/$/, '')}/api/login`;
       window.location.href = loginUrl;
       return;
     }
