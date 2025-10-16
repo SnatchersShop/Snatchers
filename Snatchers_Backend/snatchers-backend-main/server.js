@@ -17,6 +17,7 @@ try {
   // ignore
 }
 import express from 'express';
+import cookie from 'cookie';
 // import dotenv from 'dotenv';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -233,13 +234,27 @@ app.get('/api/user/me', (req, res) => {
     console.log('[Debug] /api/user/me request — Cookie header:', req.headers.cookie);
     console.log('[Debug] /api/user/me request — sessionID:', req.sessionID);
     console.log('[Debug] /api/user/me request — req.session present:', !!req.session);
-    // Try to read the session from the store directly
+    // Try to read the session from the store directly for both the current
+    // req.sessionID (what express-session parsed) and the raw cookie value
     try {
       if (req.sessionStore && req.sessionID) {
         req.sessionStore.get(req.sessionID, (err, sess) => {
-          if (err) console.error('[Debug] sessionStore.get error:', err);
-          console.log('[Debug] sessionStore.get result for', req.sessionID, sess ? 'FOUND' : 'NOT FOUND');
+          if (err) console.error('[Debug] sessionStore.get error for req.sessionID:', err);
+          console.log('[Debug] sessionStore.get result for req.sessionID', req.sessionID, sess ? 'FOUND' : 'NOT FOUND');
         });
+      }
+      const rawCookie = req.headers.cookie || '';
+      const parsed = rawCookie ? cookie.parse(rawCookie) : {};
+      const incomingSid = parsed['connect.sid'];
+      if (incomingSid) {
+        // If the cookie value is signed like "s:...", strip the prefix before lookup
+        const sidForLookup = incomingSid.startsWith('s:') ? incomingSid.slice(2) : incomingSid;
+        req.sessionStore.get(sidForLookup, (err2, sess2) => {
+          if (err2) console.error('[Debug] sessionStore.get error for cookie SID:', err2);
+          console.log('[Debug] sessionStore.get result for cookie SID', sidForLookup, sess2 ? 'FOUND' : 'NOT FOUND');
+        });
+      } else {
+        console.log('[Debug] no connect.sid found in incoming Cookie header');
       }
     } catch (e) {
       console.warn('[Debug] sessionStore.get threw', e);
