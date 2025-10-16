@@ -49,7 +49,7 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 // Middleware
-const cors = require("cors");
+//const cors = require("cors");
 
 const allowedOrigins = [
   "http://localhost:3000",
