@@ -59,7 +59,7 @@ export default function Auth() {
     // Here you would show an error message to the user
     toast.error("Invalid credentials or server error.");
   }
-};
+  };
     }
     try {
       // If server-side auth is enabled, call the backend directly with email/password
