@@ -33,11 +33,7 @@
     "express": "^5.1.0",
     "express-session": "^1.18.1",
     "fuse.js": "^7.1.0",
-<<<<<<< HEAD
-    "google-auth-library": "^10.4.0",
-=======
     "google-auth-library": "^8.8.0",
->>>>>>> 2216db2b9f6c8fca7ea20b09676684f729e8b97d
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.1",
     "multer": "^2.0.1",

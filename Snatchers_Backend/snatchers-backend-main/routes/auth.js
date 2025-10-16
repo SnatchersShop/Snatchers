@@ -1,4 +1,5 @@
 import express from 'express';
+import signature from 'cookie-signature';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import User from '../models/User.js';
 import { OAuth2Client } from 'google-auth-library';
@@ -7,6 +8,44 @@ import bcrypt from 'bcrypt';
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const router = express.Router();
+
+// Helper to set the session cookie explicitly (works around proxy/header differences)
+function setSessionCookie(req, res) {
+  try {
+    const secureFlag = req.secure || (req.headers && req.headers['x-forwarded-proto'] === 'https');
+    const sessionCookieDays = parseInt(process.env.SESSION_COOKIE_DAYS || '', 10);
+    const defaultCookieDays = Number.isFinite(sessionCookieDays) ? sessionCookieDays : 30;
+    const cookieMaxAge = process.env.SESSION_MAX_AGE_MS
+      ? parseInt(process.env.SESSION_MAX_AGE_MS, 10)
+      : 1000 * 60 * 60 * 24 * defaultCookieDays;
+    const sameSite = process.env.SESSION_SAME_SITE || (secureFlag ? 'none' : 'lax');
+    const cookieOptions = {
+      httpOnly: true,
+      secure: secureFlag,
+      sameSite,
+      maxAge: cookieMaxAge,
+    };
+    if (process.env.SESSION_COOKIE_DOMAIN) cookieOptions.domain = process.env.SESSION_COOKIE_DOMAIN;
+    const cookieName = process.env.SESSION_COOKIE_NAME || 'connect.sid';
+    // express-session signs cookies using the session secret. If the session
+    // middleware is configured with a secret, sign the cookie value the same way
+    // so that direct lookups using the cookie value (without the 's:' prefix)
+    // behave as expected by connect-mongo.
+    const sessionSecret = process.env.SESSION_SECRET || 'some secret';
+    let valueToSet = req.sessionID;
+    try {
+      // cookie-signature expects a string and returns 's:...' prefixed value
+      valueToSet = 's:' + signature.sign(String(req.sessionID), sessionSecret);
+    } catch (e) {
+      // fallback: set raw session id
+      valueToSet = req.sessionID;
+    }
+    // set cookie with current (signed) session id
+    res.cookie(cookieName, valueToSet, cookieOptions);
+  } catch (e) {
+    console.warn('Failed to set session cookie explicitly', e);
+  }
+}
 
 // Create verifier lazily so env vars are available at runtime
 function createVerifier() {
@@ -58,9 +97,13 @@ router.post('/login', async (req, res) => {
     try {
   const emailNormalized = String(email || '').trim().toLowerCase();
   const user = await User.findOne({ email: { $regex: new RegExp('^' + emailNormalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } }).exec();
-      if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+      if (!user) {
+        console.warn(`[Auth] login attempt for non-existent user: ${emailNormalized}`);
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
 
       const stored = user.password;
+      console.log(`[Auth] user found for login: ${user.email} uid=${user.uid} password_present=${!!stored}`);
       let ok = false;
       let needsRehash = false;
 
@@ -71,7 +114,12 @@ router.post('/login', async (req, res) => {
 
       // Heuristic: if stored starts with $2 (bcrypt), use bcrypt.compare
       if (typeof stored === 'string' && stored.startsWith('$2')) {
-        ok = await bcrypt.compare(password, stored);
+        try {
+          ok = await bcrypt.compare(password, stored);
+          console.log('[Auth] bcrypt.compare result for', user.email, ok);
+        } catch (e) {
+          console.error('[Auth] bcrypt.compare failed', e);
+        }
       } else {
         // Plaintext fallback for legacy data: compare and re-hash on success
         if (password === stored) {
@@ -99,6 +147,8 @@ router.post('/login', async (req, res) => {
         if (req.session) {
           req.session.userInfo = { uid: user.uid, email: user.email, name: user.name, photoURL: user.photoURL };
           req.session.save?.(() => {});
+              // ensure cookie is set for browsers behind proxies
+              try { setSessionCookie(req, res); } catch (e) {}
         }
       } catch (e) {
         console.warn('Failed to create session for user', user.email, e);
@@ -138,6 +188,7 @@ router.post('/google-login', async (req, res) => {
         req.session.userInfo = { uid: user.uid, email: user.email, name: user.name, photoURL: user.photoURL };
         // Persist session
         req.session.save?.(() => {});
+            try { setSessionCookie(req, res); } catch (e) {}
       }
     } catch (e) {
       console.warn('Failed to establish session after Google login', e);
@@ -176,6 +227,7 @@ router.post('/register', async (req, res) => {
       if (req.session) {
         req.session.userInfo = { uid: userDoc.uid, email: userDoc.email, name: userDoc.name, photoURL: userDoc.photoURL };
         req.session.save?.(() => {});
+            try { setSessionCookie(req, res); } catch (e) {}
       }
     } catch (e) {
       console.warn('Failed to create session after register', e);

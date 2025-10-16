@@ -17,6 +17,7 @@ try {
   // ignore
 }
 import express from 'express';
+import cookie from 'cookie';
 // import dotenv from 'dotenv';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -42,12 +43,23 @@ import searchRouter from './routes/search.js'; // ✅ Import search route
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// If running behind a reverse proxy (nginx) we must trust the first proxy so
+// express-session can correctly detect secure requests and use the X-Forwarded-* headers.
+// This is required when TLS is terminated at nginx and Express sees plain HTTP.
+app.set('trust proxy', 1);
+
 // Middleware
 // const cors = require("cors");
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://www.snatchers.in"
+  "https://www.snatchers.in",
+  "https://zupra.online",
+
+  // Allow plain HTTP during initial testing/deployment (frontend currently served over HTTP)
+  "http://zupra.online",
+  "http://www.zupra.online"
+
 ];
 
 app.use(
@@ -104,6 +116,7 @@ const cookieSecure = !isDevMode;
 
 const sessionOptions = {
   secret: process.env.SESSION_SECRET || 'some secret',
+  name: process.env.SESSION_COOKIE_NAME || 'connect.sid',
   resave: false,
   saveUninitialized: false,
   // Refresh session cookie on every response to implement sliding expiration
@@ -111,7 +124,10 @@ const sessionOptions = {
   cookie: {
     secure: cookieSecure,
     httpOnly: true,
-    sameSite: 'lax',
+    // Allow overriding SameSite via env for special cases. In production, when
+    // cookies are secure, set SameSite to 'none' so cross-site requests from
+    // the frontend (zupra.online) will include the session cookie.
+    sameSite: process.env.SESSION_SAME_SITE || (cookieSecure ? 'none' : 'lax'),
     maxAge: cookieMaxAge,
   },
 };
@@ -220,10 +236,43 @@ app.use('/api', authRoutes);              // 🔑 Login (POST /api/auth/google)
 // protected `userRoutes` so cookie-based requests don't get intercepted
 // by the JWT `verifyToken` middleware.
 app.get('/api/user/me', (req, res) => {
-  if (!req.session || !req.session.userInfo) {
-    return res.status(401).json({ message: 'Not authenticated' });
+  try {
+    console.log('[Debug] /api/user/me request — Cookie header:', req.headers.cookie);
+    console.log('[Debug] /api/user/me request — sessionID:', req.sessionID);
+    console.log('[Debug] /api/user/me request — req.session present:', !!req.session);
+    // Try to read the session from the store directly for both the current
+    // req.sessionID (what express-session parsed) and the raw cookie value
+    try {
+      if (req.sessionStore && req.sessionID) {
+        req.sessionStore.get(req.sessionID, (err, sess) => {
+          if (err) console.error('[Debug] sessionStore.get error for req.sessionID:', err);
+          console.log('[Debug] sessionStore.get result for req.sessionID', req.sessionID, sess ? 'FOUND' : 'NOT FOUND');
+        });
+      }
+      const rawCookie = req.headers.cookie || '';
+      const parsed = rawCookie ? cookie.parse(rawCookie) : {};
+      const incomingSid = parsed['connect.sid'];
+      if (incomingSid) {
+        // If the cookie value is signed like "s:...", strip the prefix before lookup
+        const sidForLookup = incomingSid.startsWith('s:') ? incomingSid.slice(2) : incomingSid;
+        req.sessionStore.get(sidForLookup, (err2, sess2) => {
+          if (err2) console.error('[Debug] sessionStore.get error for cookie SID:', err2);
+          console.log('[Debug] sessionStore.get result for cookie SID', sidForLookup, sess2 ? 'FOUND' : 'NOT FOUND');
+        });
+      } else {
+        console.log('[Debug] no connect.sid found in incoming Cookie header');
+      }
+    } catch (e) {
+      console.warn('[Debug] sessionStore.get threw', e);
+    }
+    if (!req.session || !req.session.userInfo) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    return res.json({ user: req.session.userInfo });
+  } catch (e) {
+    console.error('[Debug] /api/user/me handler error', e);
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res.json({ user: req.session.userInfo });
 });
 
 app.use('/api/user', userRoutes);              // 👤 User routes (POST /api/user, GET /api/user/me)
@@ -246,8 +295,13 @@ app.get('/', checkAuth, (req, res) => {
   });
 });
 
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Health / diagnostic endpoint
-app.get('/health', async (req, res) => {
+// Health handler function used for both /health and /api/health
+async function healthHandler(req, res) {
   try {
     const mongoState = mongoose.connection.readyState; // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
     const mongoStatus = (() => {
@@ -291,7 +345,10 @@ app.get('/health', async (req, res) => {
   } catch (err) {
     return res.status(500).json({ status: 'error', error: String(err) });
   }
-});
+}
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 // OIDC login route - redirect to Cognito hosted login page
 app.get('/login', (req, res) => {
