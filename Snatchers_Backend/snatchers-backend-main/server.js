@@ -43,6 +43,11 @@ import searchRouter from './routes/search.js'; // ✅ Import search route
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// If running behind a reverse proxy (nginx) we must trust the first proxy so
+// express-session can correctly detect secure requests and use the X-Forwarded-* headers.
+// This is required when TLS is terminated at nginx and Express sees plain HTTP.
+app.set('trust proxy', 1);
+
 // Middleware
 // const cors = require("cors");
 
@@ -111,6 +116,7 @@ const cookieSecure = !isDevMode;
 
 const sessionOptions = {
   secret: process.env.SESSION_SECRET || 'some secret',
+  name: process.env.SESSION_COOKIE_NAME || 'connect.sid',
   resave: false,
   saveUninitialized: false,
   // Refresh session cookie on every response to implement sliding expiration

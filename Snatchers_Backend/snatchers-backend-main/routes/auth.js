@@ -1,4 +1,5 @@
 import express from 'express';
+import signature from 'cookie-signature';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import User from '../models/User.js';
 import { OAuth2Client } from 'google-auth-library';
@@ -26,8 +27,21 @@ function setSessionCookie(req, res) {
     };
     if (process.env.SESSION_COOKIE_DOMAIN) cookieOptions.domain = process.env.SESSION_COOKIE_DOMAIN;
     const cookieName = process.env.SESSION_COOKIE_NAME || 'connect.sid';
-    // set cookie with current session id
-    res.cookie(cookieName, req.sessionID, cookieOptions);
+    // express-session signs cookies using the session secret. If the session
+    // middleware is configured with a secret, sign the cookie value the same way
+    // so that direct lookups using the cookie value (without the 's:' prefix)
+    // behave as expected by connect-mongo.
+    const sessionSecret = process.env.SESSION_SECRET || 'some secret';
+    let valueToSet = req.sessionID;
+    try {
+      // cookie-signature expects a string and returns 's:...' prefixed value
+      valueToSet = 's:' + signature.sign(String(req.sessionID), sessionSecret);
+    } catch (e) {
+      // fallback: set raw session id
+      valueToSet = req.sessionID;
+    }
+    // set cookie with current (signed) session id
+    res.cookie(cookieName, valueToSet, cookieOptions);
   } catch (e) {
     console.warn('Failed to set session cookie explicitly', e);
   }
