@@ -35,31 +35,37 @@ export default function Auth() {
       }
   // backend may be provided via REACT_APP_API_BASE_URL; ensure we always hit
   // the API path on the backend which mounts Express routes under `/api`
-  const handleAuth = async () => {
-  // ... (keep the other variable definitions)
-
+  async function handleAuth() {
   try {
+    // 1. Send a POST request to the backend with email and password
     const response = await axios.post(
-      `${process.env.REACT_APP_API_BASE_URL}/api/login`, // The correct API endpoint
+      `${process.env.REACT_APP_API_BASE_URL}/api/login`,
       {
-        email: email,       // The email from your form's state
-        password: password, // The password from your form's state
+        email: email,
+        password: password,
       },
       {
-        withCredentials: true, // IMPORTANT: This sends the session cookie
+        // 2. IMPORTANT: This allows the browser to save the session cookie
+        withCredentials: true,
       }
     );
 
-    // If login is successful, you can navigate to the dashboard
+    // 3. If the login is successful, show a success message
+    toast.success("Login successful!");
     console.log("Login successful:", response.data);
-    navigate("/dashboard"); // Or wherever you want to go after login
+
+    // 4. Navigate to the user's profile page
+    // Use a short delay to allow the user to see the success message
+    setTimeout(() => {
+      navigate("/profile");
+    }, 1000);
 
   } catch (error) {
+    // If there's an error, show a message to the user
     console.error("Login failed:", error);
-    // Here you would show an error message to the user
-    toast.error("Invalid credentials or server error.");
+    toast.error("Login failed. Please check your credentials.");
   }
-  };
+}
     }
     try {
       // If server-side auth is enabled, call the backend directly with email/password
