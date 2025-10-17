@@ -12,6 +12,29 @@ const router = express.Router();
 // Helper to set the session cookie explicitly (works around proxy/header differences)
 function setSessionCookie(req, res) {
   try {
+    // If the incoming request already carries a connect.sid cookie that maps
+    // to the current session id, avoid setting another Set-Cookie header to
+    // prevent duplicate cookies.
+    try {
+      const rawCookie = req.headers && req.headers.cookie ? req.headers.cookie : '';
+      if (rawCookie) {
+        const parsed = require('cookie').parse(rawCookie);
+        const existing = parsed['connect.sid'];
+        if (existing && req.sessionID) {
+          let sid = existing;
+          if (sid.startsWith('s:')) sid = sid.slice(2);
+          const dot = sid.indexOf('.');
+          if (dot > 0) sid = sid.slice(0, dot);
+          if (sid === String(req.sessionID)) {
+            // Already present and matches current session id — nothing to do
+            console.log('[Auth] setSessionCookie: existing cookie matches sessionID — skipping Set-Cookie');
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      // non-fatal; continue to set cookie below
+    }
     const secureFlag = req.secure || (req.headers && req.headers['x-forwarded-proto'] === 'https');
     const sessionCookieDays = parseInt(process.env.SESSION_COOKIE_DAYS || '', 10);
     const defaultCookieDays = Number.isFinite(sessionCookieDays) ? sessionCookieDays : 30;
@@ -42,6 +65,7 @@ function setSessionCookie(req, res) {
     }
     // set cookie with current (signed) session id
     res.cookie(cookieName, valueToSet, cookieOptions);
+    console.log('[Auth] setSessionCookie: Set-Cookie emitted for sessionID', req.sessionID);
   } catch (e) {
     console.warn('Failed to set session cookie explicitly', e);
   }
