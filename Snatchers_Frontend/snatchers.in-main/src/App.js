@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Shop from "./Pages/Shop";
 import Home from "./Pages/Home";
 import Navbar from "./components/Navbar";
@@ -44,7 +44,6 @@ function App() {
         <Navbar />
 
         <main className="pt-36 lg:pt-19">
-          <Router>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/shop" element={<Shop />} />
@@ -74,7 +73,6 @@ function App() {
               <Route path="/scroll-demo" element={<ScrollEffectsDemo />} />
               <Route path="/scroll-debug" element={<ScrollDebug />} />
             </Routes>
-          </Router>
         </main>
         <Footer />
       </CartProvider>
