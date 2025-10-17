@@ -122,7 +122,8 @@ const sessionOptions = {
   // Refresh session cookie on every response to implement sliding expiration
   rolling: true,
   cookie: {
-    secure: cookieSecure,
+    // secure can be enforced by env override (useful in unusual deploys)
+    secure: typeof process.env.SESSION_COOKIE_SECURE !== 'undefined' ? String(process.env.SESSION_COOKIE_SECURE) === 'true' : cookieSecure,
     httpOnly: true,
     // Allow overriding SameSite via env for special cases. In production, when
     // cookies are secure, set SameSite to 'none' so cross-site requests from
@@ -131,6 +132,12 @@ const sessionOptions = {
     maxAge: cookieMaxAge,
   },
 };
+
+// If a cookie domain is provided, ensure express-session uses it so a single
+// Set-Cookie is emitted with the correct domain (avoids duplicate cookies).
+if (process.env.SESSION_COOKIE_DOMAIN) {
+  sessionOptions.cookie.domain = process.env.SESSION_COOKIE_DOMAIN;
+}
 
 // If Mongo is available, use it as session store so sessions persist across restarts
 if (process.env.MONGO_URI) {
@@ -253,8 +260,13 @@ app.get('/api/user/me', (req, res) => {
       const parsed = rawCookie ? cookie.parse(rawCookie) : {};
       const incomingSid = parsed['connect.sid'];
       if (incomingSid) {
-        // If the cookie value is signed like "s:...", strip the prefix before lookup
-        const sidForLookup = incomingSid.startsWith('s:') ? incomingSid.slice(2) : incomingSid;
+        // If the cookie value is signed like "s:<sid>.<sig>", remove the
+        // leading 's:' and then take only the part before the first '.' so we
+        // lookup the raw session id stored in the session store.
+        let sidForLookup = incomingSid;
+        if (sidForLookup.startsWith('s:')) sidForLookup = sidForLookup.slice(2);
+        const dotIdx = sidForLookup.indexOf('.');
+        if (dotIdx > 0) sidForLookup = sidForLookup.slice(0, dotIdx);
         req.sessionStore.get(sidForLookup, (err2, sess2) => {
           if (err2) console.error('[Debug] sessionStore.get error for cookie SID:', err2);
           console.log('[Debug] sessionStore.get result for cookie SID', sidForLookup, sess2 ? 'FOUND' : 'NOT FOUND');
