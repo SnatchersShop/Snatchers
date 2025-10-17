@@ -18,6 +18,7 @@ try {
 }
 import express from 'express';
 import cookie from 'cookie';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
 // import dotenv from 'dotenv';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -242,48 +243,39 @@ app.use('/api', authRoutes);              // 🔑 Login (POST /api/auth/google)
 // return the session user. This must be defined before mounting the token-
 // protected `userRoutes` so cookie-based requests don't get intercepted
 // by the JWT `verifyToken` middleware.
-app.get('/api/user/me', (req, res) => {
+app.get('/api/user/me', async (req, res) => {
   try {
-    console.log('[Debug] /api/user/me request — Cookie header:', req.headers.cookie);
-    console.log('[Debug] /api/user/me request — sessionID:', req.sessionID);
-    console.log('[Debug] /api/user/me request — req.session present:', !!req.session);
-    // Try to read the session from the store directly for both the current
-    // req.sessionID (what express-session parsed) and the raw cookie value
-    try {
-      if (req.sessionStore && req.sessionID) {
-        req.sessionStore.get(req.sessionID, (err, sess) => {
-          if (err) console.error('[Debug] sessionStore.get error for req.sessionID:', err);
-          console.log('[Debug] sessionStore.get result for req.sessionID', req.sessionID, sess ? 'FOUND' : 'NOT FOUND');
-        });
-      }
-      const rawCookie = req.headers.cookie || '';
-      const parsed = rawCookie ? cookie.parse(rawCookie) : {};
-      const incomingSid = parsed['connect.sid'];
-      if (incomingSid) {
-        // If the cookie value is signed like "s:<sid>.<sig>", remove the
-        // leading 's:' and then take only the part before the first '.' so we
-        // lookup the raw session id stored in the session store.
-        let sidForLookup = incomingSid;
-        if (sidForLookup.startsWith('s:')) sidForLookup = sidForLookup.slice(2);
-        const dotIdx = sidForLookup.indexOf('.');
-        if (dotIdx > 0) sidForLookup = sidForLookup.slice(0, dotIdx);
-        req.sessionStore.get(sidForLookup, (err2, sess2) => {
-          if (err2) console.error('[Debug] sessionStore.get error for cookie SID:', err2);
-          console.log('[Debug] sessionStore.get result for cookie SID', sidForLookup, sess2 ? 'FOUND' : 'NOT FOUND');
-        });
-      } else {
-        console.log('[Debug] no connect.sid found in incoming Cookie header');
-      }
-    } catch (e) {
-      console.warn('[Debug] sessionStore.get threw', e);
+    // 1) Session-based authentication
+    if (req.session && req.session.userInfo) {
+      return res.json({ authType: 'session', user: req.session.userInfo });
     }
-    if (!req.session || !req.session.userInfo) {
-      return res.status(401).json({ message: 'Not authenticated' });
+
+    // 2) Token-based authentication (Authorization: Bearer <token>)
+    const authHeader = req.headers.authorization || req.headers.Authorization || '';
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const userPoolId = process.env.COGNITO_USER_POOL_ID;
+        const clientId = process.env.COGNITO_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID;
+        if (!userPoolId || !clientId) {
+          console.warn('[Auth] Cognito config missing - cannot verify token');
+          return res.status(401).json({ error: 'Token verification unavailable' });
+        }
+        const verifier = CognitoJwtVerifier.create({ userPoolId, tokenUse: 'id', clientId });
+        const payload = await verifier.verify(token);
+        const user = { sub: payload.sub, email: payload.email, name: payload.name || payload['cognito:username'] };
+        return res.json({ authType: 'token', user, raw: payload });
+      } catch (err) {
+        console.error('[Auth] token verify failed:', err?.message || err);
+        return res.status(401).json({ error: 'Invalid token' });
+      }
     }
-    return res.json({ user: req.session.userInfo });
-  } catch (e) {
-    console.error('[Debug] /api/user/me handler error', e);
-    return res.status(500).json({ message: 'Server error' });
+
+    // 3) No session or token
+    return res.status(401).json({ error: 'Not authenticated' });
+  } catch (err) {
+    console.error('[Auth] /api/user/me error:', err);
+    return res.status(500).json({ error: 'Server error' });
   }
 });
 
