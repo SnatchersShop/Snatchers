@@ -85,6 +85,23 @@ app.use(
 
 app.use(express.json());
 
+// Ensure we don't enable cross-origin isolation by default.
+// Some deploy configurations or proxies may add COEP/COOP headers which
+// cause third-party resources (Cloudinary, Razorpay) to be blocked by the
+// browser. Force permissive values here so the SPA can load external scripts
+// and images without requiring special CORP/CORS server headers on third-party hosts.
+app.use((req, res, next) => {
+  try {
+    // Allow embedding/requests from other origins (do not require CORP)
+    res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    // Allow popups and avoid strict cross-origin opener behavior
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  } catch (e) {
+    // ignore
+  }
+  next();
+});
+
 // Disable ETag/conditional requests for API endpoints to avoid 304 responses
 // interfering with credentialed session checks in the SPA during local dev.
 app.disable && app.disable('etag');
