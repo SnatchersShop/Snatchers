@@ -159,7 +159,6 @@ const ProductDialog = () => {
       } finally {
         setLoading(false);
       }
-      }
     };
 
     fetchData();
