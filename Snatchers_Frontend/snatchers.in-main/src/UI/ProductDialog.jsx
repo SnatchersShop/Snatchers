@@ -142,7 +142,15 @@ const ProductDialog = () => {
             console.error("Error fetching cart/wishlist:", err);
             // Don't fail the whole operation if cart/wishlist fetch fails
           }
-        }
+  } else {
+    // initialize cart from guest storage for unauthenticated users
+    try {
+      const guest = (await import('../utils/guestCart')).getGuestCart();
+      setCart(guest.map((p) => p._id));
+    } catch (e) {
+      // ignore
+    }
+  }
       } catch (err) {
         console.error("Error fetching product data:", err);
         console.error("Error response:", err.response?.data);
@@ -150,14 +158,6 @@ const ProductDialog = () => {
         setProduct(null);
       } finally {
         setLoading(false);
-      } else {
-        // initialize cart from guest storage for unauthenticated users
-        try {
-          const guest = (await import('../utils/guestCart')).getGuestCart();
-          setCart(guest.map((p) => p._id));
-        } catch (e) {
-          // ignore
-        }
       }
       }
     };
@@ -294,23 +294,44 @@ const ProductDialog = () => {
 
   // Helpers for similar products list
   const addToCartById = async (prod) => {
-    if (!token) { alert('Please login to add to cart'); return; }
+    // If logged in, use server API; otherwise use guest cart
+    if (token) {
+      try {
+        await axios.post(`/api/cart/${prod._id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        setCart((prev) => Array.from(new Set([...prev, prod._id])));
+      } catch (err) {
+        console.error('Error adding to cart:', err);
+        alert('Unable to add to cart. Please try again later.');
+      }
+      return;
+    }
+
     try {
-      await axios.post(`/api/cart/${prod._id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      addGuestCartItem(prod);
       setCart((prev) => Array.from(new Set([...prev, prod._id])));
     } catch (err) {
-      console.error('Error adding to cart:', err);
+      console.error('Guest add to cart failed:', err);
       alert('Unable to add to cart. Please try again later.');
     }
   };
 
   const removeFromCartById = async (prodId) => {
-    if (!token) { alert('Please login to modify cart'); return; }
+    if (token) {
+      try {
+        await axios.delete(`/api/cart/${prodId}`, { headers: { Authorization: `Bearer ${token}` } });
+        setCart((prev) => prev.filter((id) => id !== prodId));
+      } catch (err) {
+        console.error('Error removing from cart:', err);
+        alert('Unable to remove from cart.');
+      }
+      return;
+    }
+
     try {
-      await axios.delete(`/api/cart/${prodId}`, { headers: { Authorization: `Bearer ${token}` } });
+      removeGuestCartItem(prodId);
       setCart((prev) => prev.filter((id) => id !== prodId));
     } catch (err) {
-      console.error('Error removing from cart:', err);
+      console.error('Guest remove from cart failed:', err);
       alert('Unable to remove from cart.');
     }
   };
@@ -638,17 +659,14 @@ const ProductDialog = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={toggleCart}
-                    disabled={!token}
                     className={`flex-1 border-2 uppercase text-sm font-semibold py-4 px-6 rounded-lg transition-all duration-300 ${
-                      !token
-                        ? "border-gray-300 text-gray-400 cursor-not-allowed bg-gray-50"
-                        : isInCart
+                      isInCart
                         ? "border-black text-black hover:bg-black hover:text-white bg-white"
                         : "border-black text-black hover:bg-black hover:text-white bg-white hover:shadow-lg"
                     }`}
                     type="button"
                   >
-                    {!token ? "Login to Add to Cart" : isInCart ? "Remove from Cart" : "Add to Cart"}
+                    {isInCart ? "Remove from Cart" : "Add to Cart"}
                   </button>
                   
                   <button
