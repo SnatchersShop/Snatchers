@@ -57,9 +57,9 @@ export default function AuthSuccess() {
         <p className="text-sm text-gray-600">
           If you are not redirected automatically,{' '}
           {isSuccess ? (
-            <a href="/profile" className="text-blue-600 underline">go to your profile</a>
+            <button onClick={() => navigate('/profile')} className="text-blue-600 underline">go to your profile</button>
           ) : (
-            <a href="/login" className="text-blue-600 underline">click here to sign in</a>
+            <button onClick={() => navigate('/login')} className="text-blue-600 underline">click here to sign in</button>
           )}
         </p>
       </div>

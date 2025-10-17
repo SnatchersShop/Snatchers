@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FaBars, FaHeart, FaSearch, FaShoppingBag, FaTimes, FaUser } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { useNavigate } from 'react-router-dom';
 
 const MobileNavbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(true);
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -37,9 +41,13 @@ const MobileNavbar = () => {
           <button className="hover:text-indigo-600">
             <FaShoppingBag />
           </button>
-          <a href="/profile" className="hover:text-indigo-600">
+          <button
+            onClick={() => (currentUser ? navigate('/profile') : navigate('/login'))}
+            className="hover:text-indigo-600"
+            aria-label="profile"
+          >
             <FaUser />
-          </a>
+          </button>
           <button
             className="text-2xl text-gray-700"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

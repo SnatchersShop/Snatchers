@@ -1,7 +1,12 @@
 import React from 'react';
 import { FaSearch, FaHeart, FaShoppingBag, FaTrashAlt, FaUser } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { useNavigate } from 'react-router-dom';
 
 const DesktopNavbar = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <>
       <div className="flex items-center justify-between w-full">
@@ -63,9 +68,13 @@ const DesktopNavbar = () => {
             </div>
           </div>
 
-          <a href="/profile" className="hover:text-indigo-600">
+          <button
+            onClick={() => (currentUser ? navigate('/profile') : navigate('/login'))}
+            className="hover:text-indigo-600"
+            aria-label="profile"
+          >
             <FaUser />
-          </a>
+          </button>
         </div>
       </div>
 

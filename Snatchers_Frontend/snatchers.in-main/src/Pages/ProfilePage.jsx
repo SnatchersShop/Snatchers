@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { LogOut, Mail, User } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useNavigate } from "react-router-dom";
 import Avatar from "react-avatar";
 
@@ -10,6 +11,7 @@ const ProfilePage = () => {
   const [orders, setOrders] = useState([]);
 
   const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
+  const { logout } = useAuth();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -121,7 +123,8 @@ const ProfilePage = () => {
         fetch('/logout', { method: 'GET', credentials: 'include' })
           .catch((e) => { /* ignore network errors */ })
           .finally(() => {
-            // clear client token copy if present and reload to ensure cookies/state cleared
+            // clear client token copy if present and clear client auth state, then reload
+            try { logout(); } catch (e) { /* ignore */ }
             localStorage.removeItem('token');
             // do a full reload to clear any in-memory app state
             window.location.href = '/';
@@ -133,6 +136,7 @@ const ProfilePage = () => {
     }
 
     // Token-based (Cognito or local token) logout: clear token and navigate to login
+    try { logout(); } catch (e) { /* ignore */ }
     localStorage.removeItem('token');
     navigate('/login');
   };

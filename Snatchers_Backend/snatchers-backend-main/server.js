@@ -505,18 +505,40 @@ app.get('/debug/tokens', (req, res) => {
 // Logout route - destroy session and redirect to Cognito logout
 app.get('/logout', (req, res) => {
   const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
-  req.session.destroy(() => {});
-  // Redirect user to Cognito logout endpoint so they are logged out from Cognito as well
-  const logoutUri = process.env.COGNITO_LOGOUT_URI || frontend;
-  const logoutEndpoint = oidcClient?.issuer?.metadata?.end_session_endpoint;
-  if (logoutEndpoint) {
-    const logoutUrl = `${logoutEndpoint}?client_id=${process.env.COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(
-      logoutUri
-    )}`;
-    return res.redirect(logoutUrl);
+  // Destroy server-side session and clear the session cookie in the response so the browser
+  // no longer sends it on subsequent requests. Use the configured session cookie name and
+  // cookie options so the cookie is removed properly across domains if a domain was set.
+  try {
+    const cookieName = (session && session.cookie && session.name) || sessionOptions.name || process.env.SESSION_COOKIE_NAME || 'connect.sid';
+    req.session && req.session.destroy && req.session.destroy((err) => {
+      // best-effort clear cookie
+      try {
+        const clearOpts = { path: '/' };
+        if (sessionOptions && sessionOptions.cookie) {
+          if (sessionOptions.cookie.domain) clearOpts.domain = sessionOptions.cookie.domain;
+          if (typeof sessionOptions.cookie.secure !== 'undefined') clearOpts.secure = sessionOptions.cookie.secure;
+          if (sessionOptions.cookie.sameSite) clearOpts.sameSite = sessionOptions.cookie.sameSite;
+        }
+        res.clearCookie(cookieName, clearOpts);
+      } catch (e) {
+        // ignore cookie clear failures
+      }
+      // Redirect user to Cognito logout endpoint so they are logged out from Cognito as well
+      const logoutUri = process.env.COGNITO_LOGOUT_URI || frontend;
+      const logoutEndpoint = oidcClient?.issuer?.metadata?.end_session_endpoint;
+      if (logoutEndpoint) {
+        const logoutUrl = `${logoutEndpoint}?client_id=${process.env.COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(
+          logoutUri
+        )}`;
+        return res.redirect(logoutUrl);
+      }
+      // Fallback: redirect to frontend
+      return res.redirect(frontend);
+    });
+  } catch (err) {
+    console.error('Error during logout:', err);
+    return res.redirect(frontend);
   }
-  // Fallback: redirect to frontend
-  res.redirect(frontend);
 });
 
 // Note: /api/user/me is now handled earlier as a session-first endpoint.

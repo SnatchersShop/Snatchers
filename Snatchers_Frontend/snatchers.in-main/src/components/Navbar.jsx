@@ -9,11 +9,13 @@ import {
   FaHeart,
 } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getGuestCart } from '../utils/guestCart';
 
 const Navbar = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, getSession, logout } = useAuth();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(true);
 
@@ -109,13 +111,32 @@ const Navbar = () => {
       return;
     }
 
-    fetchUserData();
+    // Run the user data fetch and provide a fallback that attempts to refresh the session
+    (async () => {
+      try {
+        await fetchUserData();
+      } catch (e) {
+        console.warn('fetchUserData failed, attempting fallback session check', e);
+        // attempt to refresh session and retry
+        try {
+          const s = await getSession();
+          if (!s) {
+            setCartItems(getGuestCart());
+            setWishlistCount(0);
+            return;
+          }
+          await fetchUserData();
+        } catch (innerErr) {
+          console.error('Session fallback failed:', innerErr);
+        }
+      }
+    })();
   }, [currentUser]);
 
   const handleUserClick = (e) => {
     e.preventDefault();
-    if (!currentUser) window.location.href = '/login';
-    else window.location.href = '/profile';
+    if (!currentUser) return navigate('/login');
+    return navigate('/profile');
   };
 
   const handleProductClick = (productId) => {
