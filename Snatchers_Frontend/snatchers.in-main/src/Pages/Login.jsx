@@ -16,78 +16,29 @@ export default function Auth() {
   const [existingServerUser, setExistingServerUser] = useState(null);
 
   async function handleAuth() {
-    // If server-side auth is enabled, redirect to backend's OIDC login route
     const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
-    if (useServer) {
-      // Redirect to backend OIDC login URL
-      let backend = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/$/, '');
-      if (!backend) {
-        try {
-          const origin = window.location.origin || '';
-          if (origin.includes(':3000')) {
-            backend = origin.replace(':3000', ':5000');
-          } else {
-            // fallback to localhost:5000 if we can't infer
-            backend = 'http://localhost:5000';
-          }
-        } catch (e) {
-          backend = 'http://localhost:5000';
-        }
-      }
-  // backend may be provided via REACT_APP_API_BASE_URL; ensure we always hit
-  // the API path on the backend which mounts Express routes under `/api`
-  async function handleAuth() {
-  try {
-    // 1. Send a POST request to the backend with email and password
-    const response = await axios.post(
-      `${process.env.REACT_APP_API_BASE_URL}/api/login`,
-      {
-        email: email,
-        password: password,
-      },
-      {
-        // 2. IMPORTANT: This allows the browser to save the session cookie
-        withCredentials: true,
-      }
-    );
-
-    // 3. If the login is successful, show a success message
-    toast.success("Login successful!");
-    console.log("Login successful:", response.data);
-
-    // 4. Navigate to the user's profile page
-    // Use a short delay to allow the user to see the success message
-    setTimeout(() => {
-      navigate("/profile");
-    }, 1000);
-
-  } catch (error) {
-    // If there's an error, show a message to the user
-    console.error("Login failed:", error);
-    toast.error("Login failed. Please check your credentials.");
-  }
-}
-    }
     try {
-      // If server-side auth is enabled, call the backend directly with email/password
-      if (process.env.REACT_APP_USE_SERVER_AUTH === 'true') {
-        try {
-          const emailNormalized = String(email || '').trim().toLowerCase();
-          const res = await axios.post('/api/login', { email: emailNormalized, password }, { withCredentials: true });
-          console.log('Server login result:', res.data);
-          toast.success('Login successful!');
-          setTimeout(() => navigate('/'), 1000);
-          return;
-        } catch (err) {
-          const msg = err?.response?.data?.error || err.message || 'Unknown error';
-          toast.error('Auth error: ' + msg);
-          return;
-        }
+      if (useServer) {
+        const emailNormalized = String(email || '').trim().toLowerCase();
+        const res = await axios.post('/api/login', { email: emailNormalized, password }, { withCredentials: true });
+        console.log('Server login result:', res.data);
+        toast.success('Login successful!');
+        setTimeout(() => navigate('/'), 1000);
+        return;
       }
 
-      // Otherwise use Cognito auth (SPA) as before
+      // SPA (Cognito/local) path
       const session = await login(email, password);
-      const idToken = session.getIdToken().getJwtToken();
+      // Guard: session may be null in some dev modes
+      const idToken = session && typeof session.getIdToken === 'function'
+        ? (typeof session.getIdToken().getJwtToken === 'function' ? session.getIdToken().getJwtToken() : (session.getIdToken().getJwtToken && session.getIdToken().getJwtToken()))
+        : null;
+
+      if (!idToken) {
+        toast.error('Failed to obtain identity token');
+        return;
+      }
+
       try {
         const res = await axios.post(`/api/login`, { idToken });
         const data = res.data;

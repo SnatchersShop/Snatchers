@@ -51,8 +51,26 @@ const Mens = () => {
 
         // Only fetch user-specific data if logged in
         if (session) {
-          const idToken = session.getIdToken().getJwtToken();
-          setToken(idToken);
+          let idToken = null;
+          try {
+            if (typeof session.getIdToken === 'function') {
+              const maybe = session.getIdToken();
+              idToken = typeof maybe.getJwtToken === 'function' ? maybe.getJwtToken() : (typeof maybe === 'string' ? maybe : null);
+            }
+          } catch (e) {}
+          if (!idToken) {
+            try {
+              const s2 = await getSession();
+              if (s2 && typeof s2.getIdToken === 'function') {
+                const id = s2.getIdToken();
+                idToken = typeof id.getJwtToken === 'function' ? id.getJwtToken() : (typeof id === 'string' ? id : null);
+              }
+            } catch (e) {}
+          }
+          if (!idToken) {
+            try { idToken = localStorage.getItem('token'); } catch (e) {}
+          }
+          if (idToken) setToken(idToken);
 
           try {
             const [wishlistRes, cartRes] = await Promise.all([

@@ -81,7 +81,49 @@ const Navbar = () => {
       if (!currentUser) return;
 
       try {
-        const token = await currentUser.getIdToken();
+        // Resolve token robustly: currentUser may be a local dev object, a Cognito wrapper,
+        // or an object containing a `session` field. Fall back to getSession() and localStorage.
+        const resolveToken = async () => {
+          try {
+            // If currentUser itself exposes a helper getIdToken (some mocks may), use it
+            if (currentUser && typeof currentUser.getIdToken === 'function') {
+              const maybe = await currentUser.getIdToken();
+              if (typeof maybe === 'string') return maybe;
+              if (maybe && typeof maybe.getJwtToken === 'function') return maybe.getJwtToken();
+            }
+          } catch (e) {}
+
+          try {
+            // If currentUser has a session object (CognitoAuth sets { username, session }), use that
+            if (currentUser && currentUser.session) {
+              const sess = currentUser.session;
+              if (sess && typeof sess.getIdToken === 'function') {
+                const id = sess.getIdToken();
+                if (id && typeof id.getJwtToken === 'function') return id.getJwtToken();
+              }
+            }
+          } catch (e) {}
+
+          try {
+            // Try the provided getSession() helper from the auth context
+            if (typeof getSession === 'function') {
+              const s = await getSession();
+              if (s && typeof s.getIdToken === 'function') {
+                const id = s.getIdToken();
+                if (id && typeof id.getJwtToken === 'function') return id.getJwtToken();
+              }
+            }
+          } catch (e) {}
+
+          try {
+            const stored = localStorage.getItem('token');
+            if (stored) return stored;
+          } catch (e) {}
+          return null;
+        };
+
+        const token = await resolveToken();
+        if (!token) throw new Error('No auth token available');
 
         const [wishlistRes, cartRes] = await Promise.all([
           axios.get(`/api/wishlist`, {
@@ -92,8 +134,8 @@ const Navbar = () => {
           }),
         ]);
 
-        setWishlistCount(wishlistRes.data.length);
-        setCartItems(cartRes.data);
+        setWishlistCount(wishlistRes.data.length || 0);
+        setCartItems(cartRes.data || []);
       } catch (err) {
         console.error('Error fetching user data:', err);
       }

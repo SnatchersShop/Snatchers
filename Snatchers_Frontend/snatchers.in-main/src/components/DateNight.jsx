@@ -29,10 +29,32 @@ const DateNight = () => {
 
   useEffect(() => {
     const fetchAuthToken = async () => {
-      if (currentUser) {
-        const freshToken = await currentUser.getIdToken();
-        setToken(freshToken);
-      }
+      if (!currentUser) return;
+      try {
+        if (typeof currentUser.getIdToken === 'function') {
+          const maybe = await currentUser.getIdToken();
+          if (typeof maybe === 'string') { setToken(maybe); return; }
+          if (maybe && typeof maybe.getJwtToken === 'function') { setToken(maybe.getJwtToken()); return; }
+        }
+      } catch (e) {}
+      try {
+        if (currentUser && currentUser.session && typeof currentUser.session.getIdToken === 'function') {
+          const id = currentUser.session.getIdToken();
+          if (id && typeof id.getJwtToken === 'function') { setToken(id.getJwtToken()); return; }
+        }
+      } catch (e) {}
+      // final fallback: try getSession from auth context if available
+      try {
+        const { getSession } = require('../contexts/AuthContext.jsx');
+        if (typeof getSession === 'function') {
+          const s = await getSession();
+          if (s && typeof s.getIdToken === 'function') {
+            const id = s.getIdToken();
+            if (id && typeof id.getJwtToken === 'function') { setToken(id.getJwtToken()); return; }
+          }
+        }
+      } catch (e) {}
+      try { const st = localStorage.getItem('token'); if (st) setToken(st); } catch (e) {}
     };
     fetchAuthToken();
   }, [currentUser]);
