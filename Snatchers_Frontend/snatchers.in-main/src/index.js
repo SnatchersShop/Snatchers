@@ -16,6 +16,30 @@ if (process.env.REACT_APP_API_BASE_URL) {
   axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL;
 }
 
+// Ensure Authorization header is attached when a token is present in localStorage.
+// The app stores the token under the key 'token' (see Login.jsx). We use a
+// request interceptor so the latest token is always picked up (in case it
+// changes during the SPA lifetime).
+axios.interceptors.request.use((config) => {
+  try {
+    const stored = localStorage.getItem('token');
+    if (stored) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${stored}`;
+    }
+  } catch (e) {
+    // ignore localStorage errors (e.g., SSR or privacy settings)
+  }
+  return config;
+}, (error) => Promise.reject(error));
+
+// Helper for logout flows to remove the local token and Authorization header
+// (call this when you log out a user client-side)
+export function clearAuthToken() {
+  try { localStorage.removeItem('token'); } catch (e) {}
+  try { delete axios.defaults.headers.common.Authorization; } catch (e) {}
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
