@@ -10,6 +10,7 @@ import axios from 'axios';
 export default function Auth() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { getSession, currentUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [existingServerUser, setExistingServerUser] = useState(null);
@@ -105,24 +106,43 @@ export default function Auth() {
     }
   }
 
-  // When using server-side auth, check on mount if the server session already exists.
-  // Do NOT auto-redirect; just detect and let the tester decide to continue.
+
+  // Redirect authenticated users away from login/register pages.
   useEffect(() => {
-    const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
-    if (!useServer) return;
-    (async () => {
+    const checkAuthAndRedirect = async () => {
+      const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
       try {
-        const res = await fetch(`/api/user/me`, { credentials: 'include', cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          setExistingServerUser(data.user || data);
-          console.log('Server session detected (no auto-redirect):', data.user || data);
+        if (useServer) {
+          const res = await fetch(`/api/user/me`, { credentials: 'include', cache: 'no-store' });
+          if (res.ok) {
+            navigate('/profile');
+            return;
+          }
+        }
+
+        // Check Cognito/session-based client auth
+        try {
+          const session = await getSession();
+          if (session) {
+            navigate('/profile');
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+
+        // Fallback: check local token stored by the app
+        const token = localStorage.getItem('token');
+        if (token) {
+          navigate('/profile');
+          return;
         }
       } catch (err) {
-        // ignore, user not logged in
+        // ignore — leave user on login page
       }
-    })();
-  }, []);
+    };
+    checkAuthAndRedirect();
+  }, [getSession, navigate]);
 
 
 

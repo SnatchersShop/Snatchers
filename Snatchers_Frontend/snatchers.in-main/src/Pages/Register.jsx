@@ -6,6 +6,30 @@ import axios from 'axios';
 
 export default function Register() {
   const navigate = useNavigate();
+  // If user is already authenticated, redirect to profile
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
+        if (useServer) {
+          const res = await fetch(`/api/user/me`, { credentials: 'include', cache: 'no-store' });
+          if (res.ok) {
+            navigate('/profile');
+            return;
+          }
+        }
+        // Check local token or Cognito session
+        const token = localStorage.getItem('token');
+        if (token) {
+          navigate('/profile');
+          return;
+        }
+        // If Cognito is used client-side, the Cognito Auth Provider will prevent register page in many flows
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, [navigate]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');

@@ -9,6 +9,8 @@ import About from "./Pages/About";
 import ProductDialog from "./UI/ProductDialog";
 import CategoryShop from "./Pages/CategoryShop";
 import ProfilePage from "./Pages/ProfilePage";
+import ProtectedRoute from './components/ProtectedRoute';
+import UnauthRoute from './components/UnauthRoute';
 import AuthSuccess from "./Pages/AuthSuccess";
 import AuthError from "./Pages/AuthError";
 import Blog1 from "./Pages/Blog1";
@@ -51,14 +53,14 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/product/:productId" element={<ProductDialog />} />
               <Route path="/category-shop" element={<CategoryShop />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/auth/success" element={<AuthSuccess />} />
               <Route path="/auth/error" element={<AuthError />} />
               <Route path="/blog1" element={<Blog1 />} />
               <Route path="/blog2" element={<Blog2 />} />
               <Route path="/blog3" element={<Blog3 />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<UnauthRoute><Login /></UnauthRoute>} />
+              <Route path="/register" element={<UnauthRoute><Register /></UnauthRoute>} />
               <Route path="/add-product" element={<AddProduct />} />
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/edit-product/:id" element={<EditProduct />} />
