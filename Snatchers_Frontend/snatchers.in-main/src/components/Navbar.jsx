@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import axios from 'axios';
+import { getGuestCart } from '../utils/guestCart';
 
 const Navbar = () => {
   const { currentUser } = useAuth();
@@ -95,6 +96,18 @@ const Navbar = () => {
         console.error('Error fetching user data:', err);
       }
     };
+
+    // if not logged in, show guest cart count
+    if (!currentUser) {
+      try {
+        const guest = getGuestCart();
+        setCartItems(guest);
+        setWishlistCount(0);
+      } catch (err) {
+        console.error('Failed to read guest cart:', err);
+      }
+      return;
+    }
 
     fetchUserData();
   }, [currentUser]);

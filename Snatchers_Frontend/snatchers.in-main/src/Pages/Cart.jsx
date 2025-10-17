@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import {
+  getGuestCart,
+  addGuestCartItem,
+  removeGuestCartItem,
+  guestCartIncludes,
+} from '../utils/guestCart';
 import ProductCard from '../UI/ProductCard';
 import { useNavigate } from 'react-router-dom';
 import AnimatedHeading from '../UI/AnimatedHeading';
@@ -14,9 +20,14 @@ const Cart = () => {
   const fetchCart = async () => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        // load guest cart from localStorage
+        const guest = getGuestCart();
+        setCartItems(guest);
+        return;
+      }
 
-  const res = await axios.get(`/api/cart`, {
+      const res = await axios.get(`/api/cart`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -35,9 +46,14 @@ const Cart = () => {
   const removeFromCart = async (productId) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        // guest removal
+        removeGuestCartItem(productId);
+        setCartItems((prev) => prev.filter((item) => item._id !== productId));
+        return;
+      }
 
-  await axios.delete(`/api/cart/${productId}`, {
+      await axios.delete(`/api/cart/${productId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -50,9 +66,14 @@ const Cart = () => {
   const addToCart = async (product) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        // guest add
+        addGuestCartItem(product);
+        setCartItems((prev) => Array.from(new Set([...prev, product])));
+        return;
+      }
 
-  await axios.post(`/api/cart`, { productId: product._id }, {
+      await axios.post(`/api/cart`, { productId: product._id }, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -85,6 +106,16 @@ const Cart = () => {
         heading="Your Cart"
         subheading="Everything you're ready to grab!"
       />
+
+      {!localStorage.getItem('token') && (
+        <div className="max-w-3xl mx-auto mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded text-center">
+          <p className="mb-3">You're viewing the cart as a guest. You can add items and continue shopping. To save your cart across devices or proceed to checkout, please login or register.</p>
+          <div className="flex gap-4 justify-center">
+            <button onClick={() => navigate('/login')} className="px-4 py-2 bg-black text-white rounded">Login</button>
+            <button onClick={() => navigate('/register')} className="px-4 py-2 border border-black rounded">Register</button>
+          </div>
+        </div>
+      )}
 
       {cartItems.length === 0 ? (
         <p className="text-center text-gray-500 text-lg">Your cart is empty.</p>

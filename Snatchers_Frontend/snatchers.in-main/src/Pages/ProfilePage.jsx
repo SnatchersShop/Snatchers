@@ -114,8 +114,27 @@ const ProfilePage = () => {
   }, [user]);
 
   const handleSignOut = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
+    // If SPA is using server-side sessions, call backend /logout to destroy the session cookie
+    try {
+      if (useServer) {
+        // call backend logout which destroys session and redirects to Cognito logout
+        fetch('/logout', { method: 'GET', credentials: 'include' })
+          .catch((e) => { /* ignore network errors */ })
+          .finally(() => {
+            // clear client token copy if present and reload to ensure cookies/state cleared
+            localStorage.removeItem('token');
+            // do a full reload to clear any in-memory app state
+            window.location.href = '/';
+          });
+        return;
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+
+    // Token-based (Cognito or local token) logout: clear token and navigate to login
+    localStorage.removeItem('token');
+    navigate('/login');
   };
 
   if (loading) {

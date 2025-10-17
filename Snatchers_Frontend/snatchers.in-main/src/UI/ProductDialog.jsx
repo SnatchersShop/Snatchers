@@ -7,6 +7,11 @@ import "swiper/css";
 import "swiper/css/thumbs";
 import "swiper/css/navigation";
 import { useAuth } from '../contexts/AuthContext.jsx';
+import {
+  addGuestCartItem,
+  removeGuestCartItem,
+  guestCartIncludes,
+} from '../utils/guestCart';
 import { motion } from "framer-motion";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import products from "../Data/ProductData";
@@ -145,6 +150,15 @@ const ProductDialog = () => {
         setProduct(null);
       } finally {
         setLoading(false);
+      } else {
+        // initialize cart from guest storage for unauthenticated users
+        try {
+          const guest = (await import('../utils/guestCart')).getGuestCart();
+          setCart(guest.map((p) => p._id));
+        } catch (e) {
+          // ignore
+        }
+      }
       }
     };
 
@@ -209,9 +223,15 @@ const ProductDialog = () => {
   const isWishlisted = product ? wishlist.includes(product._id) : false;
 
   const toggleWishlist = async () => {
-    if (!token || !product) return;
+    if (!product) return;
+    // Wishlist requires authentication
+    if (!token) {
+      // redirect to login/register flow
+      window.location.href = '/login';
+      return;
+    }
 
-  const url = `/api/wishlist/${product._id}`;
+    const url = `/api/wishlist/${product._id}`;
 
     try {
       if (isWishlisted) {
@@ -234,26 +254,41 @@ const ProductDialog = () => {
   };
 
   const toggleCart = async () => {
-    if (!token || !product) return;
+    if (!product) return;
 
-  const url = `/api/cart/${product._id}`;
+    // If logged in, call server API
+    if (token) {
+      const url = `/api/cart/${product._id}`;
+      try {
+        if (isInCart) {
+          await axios.delete(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCart((prev) => prev.filter((id) => id !== product._id));
+        } else {
+          await axios.post(url, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCart((prev) => [...prev, product._id]);
+        }
+      } catch (err) {
+        console.error("Error updating cart:", err);
+        alert("Unable to update cart. Please try again later or contact support.");
+      }
+      return;
+    }
 
+    // Guest flow: use localStorage-backed guest cart
     try {
-      if (isInCart) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      if (guestCartIncludes(product._id)) {
+        removeGuestCartItem(product._id);
         setCart((prev) => prev.filter((id) => id !== product._id));
       } else {
-        await axios.post(url, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCart((prev) => [...prev, product._id]);
+        addGuestCartItem(product);
+        setCart((prev) => Array.from(new Set([...prev, product._id])));
       }
     } catch (err) {
-      console.error("Error updating cart:", err);
-      // If API fails, show a message to the user
-      alert("Unable to update cart. Please try again later or contact support.");
+      console.error('Guest cart update failed', err);
     }
   };
 

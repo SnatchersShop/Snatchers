@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ProductCard from "../UI/ProductCard";
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { guestCartIncludes, addGuestCartItem, removeGuestCartItem } from '../utils/guestCart';
 import { StaggeredReveal, RevealOnScroll, MagneticScroll } from "../components/ScrollAnimations";
 import productsFallback from '../Data/ProductData';
 
@@ -121,28 +122,40 @@ const Shop = () => {
 
   const toggleCart = async (e, productId) => {
     e?.stopPropagation?.();
-    if (!token) {
-      navigate('/login');
+    const isInCart = cart.includes(productId) || guestCartIncludes(productId);
+
+    if (token) {
+      const url = `/api/cart/${productId}`;
+      try {
+        if (isInCart) {
+          await axios.delete(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCart((prev) => prev.filter((id) => id !== productId));
+        } else {
+          await axios.post(url, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCart((prev) => [...prev, productId]);
+        }
+      } catch (err) {
+        console.error("Error updating cart:", err);
+      }
       return;
     }
 
-    const isInCart = cart.includes(productId);
-  const url = `/api/cart/${productId}`;
-
+    // Guest cart toggle
     try {
-      if (isInCart) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      if (guestCartIncludes(productId)) {
+        removeGuestCartItem(productId);
         setCart((prev) => prev.filter((id) => id !== productId));
       } else {
-        await axios.post(url, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCart((prev) => [...prev, productId]);
+        const prod = products.find((p) => String(p._id) === String(productId)) || { _id: productId };
+        addGuestCartItem(prod);
+        setCart((prev) => Array.from(new Set([...prev, productId])));
       }
     } catch (err) {
-      console.error("Error updating cart:", err);
+      console.error('Guest cart update failed', err);
     }
   };
 

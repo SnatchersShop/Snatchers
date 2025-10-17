@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
 import axios from "axios";
 import { useAuth } from '../contexts/AuthContext.jsx';
+import {
+  addGuestCartItem,
+  removeGuestCartItem,
+  guestCartIncludes,
+} from '../utils/guestCart';
 
 const NewProducts = () => {
   const navigate = useNavigate();
@@ -101,28 +106,42 @@ const NewProducts = () => {
 
   const toggleCart = async (e, productId) => {
     e?.stopPropagation?.();
-    if (!token) {
-      window.location.href = '/login';
+    const isInCart = cart.includes(productId) || guestCartIncludes(productId);
+
+    // If logged in, use server API
+    if (token) {
+      const url = `/api/cart/${productId}`;
+      try {
+        if (isInCart) {
+          await axios.delete(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCart((prev) => prev.filter((id) => id !== productId));
+        } else {
+          await axios.post(`/api/cart/${productId}`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCart((prev) => [...prev, productId]);
+        }
+      } catch (err) {
+        console.error("Error updating cart:", err);
+      }
       return;
     }
 
-    const isInCart = cart.includes(productId);
-  const url = `/api/cart/${productId}`;
-
+    // Guest flow: toggle localStorage-backed cart
     try {
-      if (isInCart) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      if (guestCartIncludes(productId)) {
+        removeGuestCartItem(productId);
         setCart((prev) => prev.filter((id) => id !== productId));
       } else {
-  await axios.post(`/api/cart/${productId}`, { }, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCart((prev) => [...prev, productId]);
+        // Build minimal product placeholder for guest cart
+        const prod = products.find((p) => String(p._id) === String(productId)) || { _id: productId };
+        addGuestCartItem(prod);
+        setCart((prev) => Array.from(new Set([...prev, productId])));
       }
     } catch (err) {
-      console.error("Error updating cart:", err);
+      console.error('Guest cart update failed', err);
     }
   };
 

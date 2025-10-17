@@ -4,6 +4,7 @@ import ProductCard from "../UI/ProductCard";
 import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
+import { guestCartIncludes, addGuestCartItem, removeGuestCartItem, getGuestCart } from '../utils/guestCart';
 
 const DateNight = () => {
   const [products, setProducts] = useState([]);
@@ -65,7 +66,8 @@ const DateNight = () => {
 
     const fetchCart = async () => {
       if (!token) {
-        setCart([]);
+        // load guest cart
+        setCart(getGuestCart().map(p => p._id));
         return;
       }
       try {
@@ -114,26 +116,40 @@ const DateNight = () => {
   };
 
   const toggleCart = async (productId) => {
-    if (!token) {
-      window.location.href = '/login';
+    const isInCart = cart.includes(productId) || guestCartIncludes(productId);
+
+    if (token) {
+      const url = `/api/cart/${productId}`;
+      try {
+        if (isInCart) {
+          await axios.delete(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCart((prev) => prev.filter((id) => id !== productId));
+        } else {
+          await axios.post(url, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setCart((prev) => [...prev, productId]);
+        }
+      } catch (err) {
+        console.error("Error updating cart:", err);
+      }
       return;
     }
-    const isInCart = cart.includes(productId);
-  const url = `/api/cart/${productId}`;
+
+    // guest
     try {
-      if (isInCart) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      if (guestCartIncludes(productId)) {
+        removeGuestCartItem(productId);
         setCart((prev) => prev.filter((id) => id !== productId));
       } else {
-        await axios.post(url, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCart((prev) => [...prev, productId]);
+        const prod = products.find((p) => String(p._id) === String(productId)) || { _id: productId };
+        addGuestCartItem(prod);
+        setCart((prev) => Array.from(new Set([...prev, productId])));
       }
     } catch (err) {
-      console.error("Error updating cart:", err);
+      console.error('Guest cart update failed', err);
     }
   };
 
