@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import api from '../api';
 
 export default function UnauthRoute({ children }) {
   const { getSession } = useAuth();
@@ -20,6 +21,8 @@ export default function UnauthRoute({ children }) {
             }
           } catch (e) {}
         }
+
+        // Check Cognito/session-based client auth
         try {
           const session = await getSession();
           if (session) {
@@ -27,10 +30,20 @@ export default function UnauthRoute({ children }) {
             return;
           }
         } catch (e) {}
-        const token = localStorage.getItem('token');
-        if (token) {
-          if (mounted) setAuthenticated(true);
-          return;
+
+        // Token-based path: api instance will attach Authorization header if token exists
+        try {
+          const tokenCheck = localStorage.getItem('token');
+          if (tokenCheck) {
+            // Use api (axios) which will add the token automatically
+            const userRes = await api.get('/api/user/me');
+            if (userRes && userRes.status === 200) {
+              if (mounted) setAuthenticated(true);
+              return;
+            }
+          }
+        } catch (e) {
+          // If token is invalid, api interceptor will clear it and redirect to login
         }
       } finally {
         if (mounted) setChecking(false);

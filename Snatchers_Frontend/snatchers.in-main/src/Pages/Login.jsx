@@ -6,6 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import axios from 'axios';
+import api from '../api';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -43,7 +44,8 @@ export default function Auth() {
         const res = await axios.post(`/api/login`, { idToken });
         const data = res.data;
         localStorage.setItem('token', data.token);
-        const userRes = await axios.get(`/api/user/me`, { headers: { Authorization: `Bearer ${data.token}` } });
+        // Use the api instance which auto-attaches Authorization header
+        const userRes = await api.get(`/api/user/me`);
         console.log('Authenticated user (Cognito):', userRes.data);
         toast.success('Login successful!');
         setTimeout(() => navigate('/'), 1500);
