@@ -54,6 +54,7 @@ app.set('trust proxy', 1);
 
 const allowedOrigins = [
   "http://localhost:3000",
+  "https://snatchers.in",
   "https://www.snatchers.in",
   "https://zupra.online",
 
