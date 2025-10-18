@@ -68,16 +68,27 @@ app.use(
   cors({
     origin: function (origin, callback) {
       // Allow requests with no origin (curl, server-side), localhost origins, and file:// during local dev.
+      try {
+        // Debug log to help diagnose CORS issues in production
+        console.debug('[CORS] Incoming Origin:', origin);
+      } catch (e) {}
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        try { console.debug('[CORS] Allowed origin:', origin); } catch (e) {}
+        return callback(null, true);
+      }
       if (process.env.NODE_ENV !== 'production') {
         // permit localhost variants and file scheme while developing locally
         try {
-          if (origin.startsWith('file://') || origin.includes('localhost')) return callback(null, true);
+          if (origin && (origin.startsWith('file://') || origin.includes('localhost'))) {
+            try { console.debug('[CORS] Allowed localhost/file origin:', origin); } catch (e) {}
+            return callback(null, true);
+          }
         } catch (e) {
           // fallthrough to deny
         }
       }
+      try { console.debug('[CORS] Rejected origin:', origin); } catch (e) {}
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true, // if you're using cookies or auth headers
@@ -85,6 +96,19 @@ app.use(
 );
 
 app.use(express.json());
+
+// Debug helper: when enabled, set permissive CORS headers so browser shows server errors
+// Usage: set DEBUG_ALLOW_ALL_CORS=true in env during debugging, then remove/disable afterward.
+if (process.env.DEBUG_ALLOW_ALL_CORS === 'true') {
+  app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    next();
+  });
+}
 
 // Ensure we don't enable cross-origin isolation by default.
 // Some deploy configurations or proxies may add COEP/COOP headers which
