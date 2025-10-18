@@ -56,12 +56,12 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://snatchers.in",
   "https://www.snatchers.in",
-  "https://zupra.online",
+  "https://snatchers.in",
 
   // Allow plain HTTP during initial testing/deployment (frontend currently served over HTTP)
-  "http://zupra.online",
-  "http://www.zupra.online"
-
+  "https://snatchers.in",
+  "http://snatchers.in",
+  "http://www.snatchers.in"
 ];
 
 app.use(
@@ -170,7 +170,7 @@ const sessionOptions = {
     httpOnly: true,
     // Allow overriding SameSite via env for special cases. In production, when
     // cookies are secure, set SameSite to 'none' so cross-site requests from
-    // the frontend (zupra.online) will include the session cookie.
+    // the frontend (snatchers.in) will include the session cookie.
     sameSite: process.env.SESSION_SAME_SITE || (cookieSecure ? 'none' : 'lax'),
     maxAge: cookieMaxAge,
   },

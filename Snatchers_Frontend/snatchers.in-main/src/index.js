@@ -11,7 +11,7 @@ import axios from 'axios';
 // Global axios defaults: include credentials so cookies (HTTP-only session) are sent
 axios.defaults.withCredentials = true;
 // If an API base URL is provided at build time, always use it. This lets the
-// production build target the backend host (for example: https://api.zupra.online)
+// production build target the backend host (for example: https://api.snatchers.in)
 // while dev still benefits from the CRA proxy when env var is not set.
 if (process.env.REACT_APP_API_BASE_URL) {
   axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL;

@@ -33,7 +33,7 @@ See the section about [deployment](https://facebook.github.io/create-react-app/d
 
 When building the production bundle you should set the following environment variables at build time:
 
-- `REACT_APP_API_BASE_URL` - the full URL of your backend API (for example: `https://api.zupra.online`). If set, the production bundle will use this as the axios base URL so all `/api/*` requests go to the API host.
+- `REACT_APP_API_BASE_URL` - the full URL of your backend API (for example: `https://api.snatchers.in`). If set, the production bundle will use this as the axios base URL so all `/api/*` requests go to the API host.
 - `REACT_APP_USE_SERVER_AUTH` - set to `true` if you want the app to use server-side session authentication (default: `false`).
 
 Preferred workflow:
@@ -41,7 +41,7 @@ Preferred workflow:
 1. Build locally (recommended):
 
 ```bash
-export REACT_APP_API_BASE_URL=https://api.zupra.online
+export REACT_APP_API_BASE_URL=https://api.snatchers.in
 export REACT_APP_USE_SERVER_AUTH=true
 npm run build
 ```
