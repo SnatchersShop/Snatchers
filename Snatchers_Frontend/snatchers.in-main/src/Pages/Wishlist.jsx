@@ -87,7 +87,8 @@ const Wishlist = () => {
       }
 
       if (token) {
-  await api.delete(`/wishlist/${productId}`);
+        // call server endpoint to remove wishlist item; ensure /api/ prefix so nginx routes to backend
+        await api.delete(`/api/wishlist/${productId}`);
 
         setWishlist((prev) => prev.filter((item) => item._id !== productId));
       } else {

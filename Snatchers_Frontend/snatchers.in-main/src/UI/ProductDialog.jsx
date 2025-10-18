@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 import api from '../api';
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Thumbs } from "swiper/modules";
@@ -176,7 +175,7 @@ const ProductDialog = () => {
         return na === nb;
       };
       try {
-        const res = await api.get('/products');
+        const res = await api.get('/api/products');
         if (!mounted) return;
         const all = Array.isArray(res.data) ? res.data : [];
         const similar = all
@@ -227,7 +226,7 @@ const ProductDialog = () => {
       return;
     }
 
-    const url = `/wishlist/${product._id}`;
+    const url = `/api/wishlist/${product._id}`;
 
     try {
       if (isWishlisted) {
@@ -250,7 +249,7 @@ const ProductDialog = () => {
 
     // If logged in, call server API
     if (token) {
-      const url = `/cart/${product._id}`;
+      const url = `/api/cart/${product._id}`;
       try {
         if (isInCart) {
           await api.delete(url);
@@ -285,7 +284,7 @@ const ProductDialog = () => {
     // If logged in, use server API; otherwise use guest cart
     if (token) {
       try {
-        await api.post(`/cart/${prod._id}`);
+        await api.post(`/api/cart/${prod._id}`);
         setCart((prev) => Array.from(new Set([...prev, prod._id])));
       } catch (err) {
         console.error('Error adding to cart:', err);
@@ -306,7 +305,7 @@ const ProductDialog = () => {
   const removeFromCartById = async (prodId) => {
     if (token) {
       try {
-        await api.delete(`/cart/${prodId}`);
+        await api.delete(`/api/cart/${prodId}`);
         setCart((prev) => prev.filter((id) => id !== prodId));
       } catch (err) {
         console.error('Error removing from cart:', err);
@@ -328,10 +327,10 @@ const ProductDialog = () => {
     if (!token) { alert('Please login to manage wishlist'); return; }
     try {
       if (wishlist.includes(prod._id)) {
-        await api.delete(`/wishlist/${prod._id}`);
+        await api.delete(`/api/wishlist/${prod._id}`);
         setWishlist((prev) => prev.filter((id) => id !== prod._id));
       } else {
-        await api.post(`/wishlist/${prod._id}`);
+        await api.post(`/api/wishlist/${prod._id}`);
         setWishlist((prev) => Array.from(new Set([...prev, prod._id])));
       }
       window.dispatchEvent(new Event('wishlist:changed'));

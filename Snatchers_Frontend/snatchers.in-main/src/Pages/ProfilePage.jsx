@@ -112,20 +112,24 @@ const ProfilePage = () => {
     fetchOrders();
   }, [user]);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     // If SPA is using server-side sessions, call backend /logout to destroy the session cookie
     try {
       if (useServer) {
-        // call backend logout which destroys session and redirects to Cognito logout
-        fetch('/logout', { method: 'GET', credentials: 'include' })
-          .catch((e) => { /* ignore network errors */ })
-          .finally(() => {
-            // clear client token copy if present and clear client auth state, then reload
-            try { logout(); } catch (e) { /* ignore */ }
-            localStorage.removeItem('token');
-            // do a full reload to clear any in-memory app state
-            window.location.href = '/';
-          });
+        // call backend logout which destroys session cookie and clears server session
+        try {
+          // use the centralized api instance so cookies are sent (withCredentials)
+          await api.post('/api/logout');
+        } catch (e) {
+          // ignore network errors during logout
+          console.debug('Logout POST /api/logout failed:', e?.message || e);
+        } finally {
+          // clear client token copy if present and clear client auth state, then reload
+          try { logout(); } catch (e) { /* ignore */ }
+          localStorage.removeItem('token');
+          // do a full reload to clear any in-memory app state
+          window.location.href = '/';
+        }
         return;
       }
     } catch (err) {

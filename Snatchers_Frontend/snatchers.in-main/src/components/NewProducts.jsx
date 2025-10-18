@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
-import axios from "axios";
 import api from '../api';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import {
@@ -80,7 +79,7 @@ const NewProducts = () => {
     }
 
     const isWishlisted = wishlist.includes(productId);
-  const url = `/wishlist/${productId}`;
+  const url = `/api/wishlist/${productId}`;
 
     try {
         if (isWishlisted) {
@@ -103,13 +102,13 @@ const NewProducts = () => {
 
     // If logged in, use server API
     if (token) {
-      const url = `/cart/${productId}`;
+      const url = `/api/cart/${productId}`;
       try {
         if (isInCart) {
           await api.delete(url);
           setCart((prev) => prev.filter((id) => id !== productId));
         } else {
-          await api.post(`/cart/${productId}`);
+          await api.post(`/api/cart/${productId}`);
           setCart((prev) => [...prev, productId]);
         }
       } catch (err) {

@@ -266,4 +266,39 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Logout endpoint for SPA (destroys server session and clears session cookie)
+router.post('/logout', (req, res) => {
+  try {
+    const cookieName = process.env.SESSION_COOKIE_NAME || 'connect.sid';
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('[Auth] session destroy error:', err);
+          return res.status(500).json({ error: 'Could not log out.' });
+        }
+        try {
+          const clearOpts = { path: '/' };
+          if (process.env.SESSION_COOKIE_DOMAIN) clearOpts.domain = process.env.SESSION_COOKIE_DOMAIN;
+          // sameSite/secure flags intentionally omitted for clear; browser will clear by name+domain+path
+          res.clearCookie(cookieName, clearOpts);
+        } catch (e) {
+          console.warn('[Auth] failed to clear cookie during logout:', e);
+        }
+        return res.json({ message: 'Logged out successfully' });
+      });
+    } else {
+      // No session exists
+      try {
+        const clearOpts = { path: '/' };
+        if (process.env.SESSION_COOKIE_DOMAIN) clearOpts.domain = process.env.SESSION_COOKIE_DOMAIN;
+        res.clearCookie(cookieName, clearOpts);
+      } catch (e) {}
+      return res.json({ message: 'No session to clear' });
+    }
+  } catch (err) {
+    console.error('[Auth] /logout error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;

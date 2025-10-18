@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import api from '../api';
 import { useParams } from "react-router-dom";
 import OrderPlacedModal from "./OrderPlacedModal";
@@ -32,20 +31,18 @@ const BuyNowComponent = () => {
     if (useServer) {
       // Try same-origin request which will send HTTP-only session cookie set by backend
       const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
-      axios
-        .get(backend + `/api/user/me`, { withCredentials: true, headers: { 'Cache-Control': 'no-store' } })
-        .then((response) => {
-          const user = response.data && response.data.user ? response.data.user : response.data;
-          setForm((prev) => ({ ...prev, email: user.email || '' }));
-        })
-        .catch((error) => {
-          console.log('Authentication error (server):', error.response?.status);
-          if (error.response?.status === 401) {
-            setAuthError('Your session has expired. Please login again to continue.');
-          } else {
-            setAuthError('Unable to load user information. Please try again.');
-          }
-        });
+      try {
+        const resp = await api.get(backend + `/api/user/me`, { headers: { 'Cache-Control': 'no-store' } });
+        const user = resp.data && resp.data.user ? resp.data.user : resp.data;
+        setForm((prev) => ({ ...prev, email: user.email || '' }));
+      } catch (error) {
+        console.log('Authentication error (server):', error.response?.status);
+        if (error.response?.status === 401) {
+          setAuthError('Your session has expired. Please login again to continue.');
+        } else {
+          setAuthError('Unable to load user information. Please try again.');
+        }
+      }
       return;
     }
 
@@ -76,17 +73,15 @@ const BuyNowComponent = () => {
 
   useEffect(() => {
     setLoadingProduct(true);
-    axios
-      .get((process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in') + `/api/products/${productId}`)
-      .then((res) => {
-        setProduct(res.data);
-        setLoadingProduct(false);
-      })
-      .catch((error) => {
-        console.log("Product fetch error:", error.response?.status);
-        setProduct(null);
-        setLoadingProduct(false);
-      });
+    try {
+      const resp = await api.get((process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in') + `/api/products/${productId}`);
+      setProduct(resp.data);
+      setLoadingProduct(false);
+    } catch (error) {
+      console.log("Product fetch error:", error.response?.status);
+      setProduct(null);
+      setLoadingProduct(false);
+    }
   }, [productId]);
 
   const handleChange = (e) =>

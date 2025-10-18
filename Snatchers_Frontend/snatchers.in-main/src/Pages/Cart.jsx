@@ -51,7 +51,7 @@ const Cart = () => {
         return;
       }
 
-      await api.delete(`/cart/${productId}`);
+      await api.delete(`/api/cart/${productId}`);
 
       setCartItems((prev) => prev.filter((item) => item._id !== productId));
     } catch (error) {
@@ -69,7 +69,7 @@ const Cart = () => {
         return;
       }
 
-      await api.post(`/cart`, { productId: product._id });
+      await api.post(`/api/cart`, { productId: product._id });
 
       setCartItems((prev) => [...prev, product]);
     } catch (error) {

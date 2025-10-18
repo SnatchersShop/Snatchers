@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
 import { motion } from "framer-motion";
-import axios from "axios";
 import api from '../api';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { guestCartIncludes, addGuestCartItem, removeGuestCartItem } from '../utils/guestCart';
@@ -115,7 +114,7 @@ const Mens = () => {
     }
 
     const isWishlisted = wishlist.includes(productId);
-  const url = `/wishlist/${productId}`;
+  const url = `/api/wishlist/${productId}`;
 
     try {
         if (isWishlisted) {
@@ -137,7 +136,7 @@ const Mens = () => {
     const isInCart = cart.includes(productId) || guestCartIncludes(productId);
 
     if (token) {
-      const url = `/cart/${productId}`;
+      const url = `/api/cart/${productId}`;
       try {
         if (isInCart) {
           await api.delete(url);

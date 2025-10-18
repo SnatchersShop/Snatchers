@@ -113,7 +113,7 @@ const DateNight = () => {
       return;
     }
     const isWishlisted = wishlist.includes(productId);
-      const url = `/wishlist/${productId}`;
+      const url = `/api/wishlist/${productId}`;
     try {
       if (isWishlisted) {
         await api.delete(url);
@@ -133,7 +133,7 @@ const DateNight = () => {
     const isInCart = cart.includes(productId) || guestCartIncludes(productId);
 
     if (token) {
-        const url = `/cart/${productId}`;
+        const url = `/api/cart/${productId}`;
       try {
         if (isInCart) {
           await api.delete(url);
