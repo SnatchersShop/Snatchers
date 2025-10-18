@@ -17,8 +17,9 @@ const ProfilePage = () => {
     const fetchUser = async () => {
       try {
         if (useServer) {
-          // Use server-side session cookie (HTTP-only) to get user via same-origin request
-          const res = await fetch(`/api/user/me`, { credentials: 'include', cache: 'no-store' });
+          // Use server-side session cookie (HTTP-only) to get user via absolute backend URL
+          const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
+          const res = await fetch(backend + '/api/user/me', { credentials: 'include', cache: 'no-store' });
           if (!res.ok) {
             navigate('/login');
             return;
@@ -36,12 +37,9 @@ const ProfilePage = () => {
           navigate('/login');
           return;
         }
-        const res = await fetch(
-          `/api/user/me`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!res.ok) throw new Error('Unauthorized');
-        const data = await res.json();
+        // Use api instance to fetch user data when using token-based auth
+        const userRes = await api.get('/user/me');
+        const data = userRes.data;
         setUser(data && data.user ? data.user : data);
         setLoading(false);
       } catch (error) {
@@ -59,10 +57,11 @@ const ProfilePage = () => {
       try {
         // First, try to fetch from API
         const token = localStorage.getItem('token');
-        if (useServer) {
+          if (useServer) {
           try {
+            const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
             const res = await fetch(
-              `/api/orders/email/${encodeURIComponent(user.email)}`,
+              backend + `/api/orders/email/${encodeURIComponent(user.email)}`,
               { credentials: 'include', cache: 'no-store' }
             );
             if (res.ok) {
@@ -78,12 +77,9 @@ const ProfilePage = () => {
           }
         } else if (token) {
           try {
-            const res = await fetch(
-              `/api/orders/email/${encodeURIComponent(user.email)}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (res.ok) {
-              const data = await res.json();
+            const res = await api.get(`/orders/email/${encodeURIComponent(user.email)}`);
+            if (res.status === 200) {
+              const data = res.data;
               const apiOrders = data.orders || [];
               if (apiOrders.length > 0) {
                 setOrders(apiOrders);

@@ -22,7 +22,7 @@ const CategoryShop = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-  const res = await axios.get(`/api/products`);
+  const res = await api.get(`/products`);
         console.log("Fetched products:", res.data);
         console.log("Gender filter:", gender);
         console.log("Jewelry type filter:", jewelryType);

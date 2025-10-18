@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import api from '../api';
 import { useParams } from "react-router-dom";
 import OrderPlacedModal from "./OrderPlacedModal";
 
@@ -30,8 +31,9 @@ const BuyNowComponent = () => {
     const token = localStorage.getItem('token');
     if (useServer) {
       // Try same-origin request which will send HTTP-only session cookie set by backend
+      const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
       axios
-        .get(`/api/user/me`, { withCredentials: true, headers: { 'Cache-Control': 'no-store' } })
+        .get(backend + `/api/user/me`, { withCredentials: true, headers: { 'Cache-Control': 'no-store' } })
         .then((response) => {
           const user = response.data && response.data.user ? response.data.user : response.data;
           setForm((prev) => ({ ...prev, email: user.email || '' }));
@@ -75,7 +77,7 @@ const BuyNowComponent = () => {
   useEffect(() => {
     setLoadingProduct(true);
     axios
-      .get(`/api/products/${productId}`)
+      .get((process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in') + `/api/products/${productId}`)
       .then((res) => {
         setProduct(res.data);
         setLoadingProduct(false);
@@ -110,7 +112,7 @@ const BuyNowComponent = () => {
         currency: "INR",
         receipt: "rcptid_" + Date.now(),
       };
-      const paymentRes = await axios.post(`/api/payment/create-order`, paymentPayload);
+      const paymentRes = await api.post(`/payment/create-order`, paymentPayload);
       const { id: razorpayOrderId, amount, currency } = paymentRes.data.order;
 
       const options = {
@@ -156,7 +158,7 @@ const BuyNowComponent = () => {
               payment_id,
             };
 
-            const responseSR = await axios.post(`/api/shiprocket/create-order`, payload);
+            const responseSR = await api.post(`/shiprocket/create-order`, payload);
 
             // Store order locally for profile page
             const orderData = {
@@ -187,7 +189,7 @@ const BuyNowComponent = () => {
             try {
               const token = localStorage.getItem("token");
               if (token) {
-                await axios.post(`/api/orders`, orderData, { headers: { Authorization: `Bearer ${token}` } });
+                await api.post(`/orders`, orderData);
                 console.log('Order saved to backend successfully');
               }
             } catch (backendError) {

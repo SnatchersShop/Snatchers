@@ -14,7 +14,7 @@ export default function UnauthRoute({ children }) {
       try {
         if (process.env.REACT_APP_USE_SERVER_AUTH === 'true') {
           try {
-            const res = await fetch('/api/user/me', { credentials: 'include', cache: 'no-store' });
+            const res = await fetch('https://api.snatchers.in/api/user/me', { credentials: 'include', cache: 'no-store' });
             if (res.ok) {
               if (mounted) setAuthenticated(true);
               return;
@@ -36,7 +36,7 @@ export default function UnauthRoute({ children }) {
           const tokenCheck = localStorage.getItem('token');
           if (tokenCheck) {
             // Use api (axios) which will add the token automatically
-            const userRes = await api.get('/api/user/me');
+            const userRes = await api.get('/user/me');
             if (userRes && userRes.status === 200) {
               if (mounted) setAuthenticated(true);
               return;

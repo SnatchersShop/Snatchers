@@ -62,7 +62,7 @@ const DateNight = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-  const res = await axios.get(`/api/products`);
+          const res = await api.get(`/products`);
         setProducts(res.data);
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -75,9 +75,7 @@ const DateNight = () => {
         return;
       }
       try {
-  const res = await axios.get(`/api/wishlist`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+          const res = await api.get(`/wishlist`);
         const productIds = res.data.map((p) => p._id);
         setWishlist(productIds);
       } catch (err) {
@@ -93,9 +91,7 @@ const DateNight = () => {
         return;
       }
       try {
-  const res = await axios.get(`/api/cart`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+          const res = await api.get(`/cart`);
         const productIds = res.data.map((item) =>
           item.product ? item.product._id : item._id // handle nested structure if needed
         );
@@ -117,18 +113,14 @@ const DateNight = () => {
       return;
     }
     const isWishlisted = wishlist.includes(productId);
-  const url = `/api/wishlist/${productId}`;
+      const url = `/wishlist/${productId}`;
     try {
       if (isWishlisted) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.delete(url);
         setWishlist((prev) => prev.filter((id) => id !== productId));
         window.dispatchEvent(new Event('wishlist:changed'));
       } else {
-        await axios.post(url, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post(url);
         setWishlist((prev) => [...prev, productId]);
         window.dispatchEvent(new Event('wishlist:changed'));
       }
@@ -141,17 +133,13 @@ const DateNight = () => {
     const isInCart = cart.includes(productId) || guestCartIncludes(productId);
 
     if (token) {
-      const url = `/api/cart/${productId}`;
+        const url = `/cart/${productId}`;
       try {
         if (isInCart) {
-          await axios.delete(url, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await api.delete(url);
           setCart((prev) => prev.filter((id) => id !== productId));
         } else {
-          await axios.post(url, {}, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await api.post(url);
           setCart((prev) => [...prev, productId]);
         }
       } catch (err) {

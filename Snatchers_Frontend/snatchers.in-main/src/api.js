@@ -2,8 +2,10 @@ import axios from 'axios';
 
 // Create a new axios instance
 const api = axios.create({
-  // baseURL can be set via environment if needed
-  baseURL: process.env.REACT_APP_API_BASE_URL || '',
+  // baseURL reads from environment, falling back to production API host
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in',
+  // send cookies if backend uses cookie sessions; adjust if using token-only
+  withCredentials: true,
 });
 
 // Request interceptor: attach token from localStorage

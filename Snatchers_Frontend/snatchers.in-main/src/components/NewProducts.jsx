@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
 import axios from "axios";
+import api from '../api';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import {
   addGuestCartItem,
@@ -27,7 +28,7 @@ const NewProducts = () => {
         const idToken = session ? session.getIdToken().getJwtToken() : null;
         
         // Always fetch products (no auth required)
-  const productRes = await axios.get(`/api/products`);
+  const productRes = await api.get(`/products`);
         const sorted = productRes.data.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
@@ -39,12 +40,8 @@ const NewProducts = () => {
 
           try {
             const [wishlistRes, cartRes] = await Promise.all([
-              axios.get(`/api/wishlist`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-              }),
-              axios.get(`/api/cart`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-              }),
+              api.get(`/wishlist`),
+              api.get(`/cart`),
             ]);
 
             const wishlistedIds = wishlistRes.data.map((item) =>
@@ -83,19 +80,15 @@ const NewProducts = () => {
     }
 
     const isWishlisted = wishlist.includes(productId);
-  const url = `/api/wishlist/${productId}`;
+  const url = `/wishlist/${productId}`;
 
     try {
-      if (isWishlisted) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        if (isWishlisted) {
+        await api.delete(url);
         setWishlist((prev) => prev.filter((id) => id !== productId));
         window.dispatchEvent(new Event('wishlist:changed'));
       } else {
-        await axios.post(url, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post(url);
         setWishlist((prev) => [...prev, productId]);
         window.dispatchEvent(new Event('wishlist:changed'));
       }
@@ -110,17 +103,13 @@ const NewProducts = () => {
 
     // If logged in, use server API
     if (token) {
-      const url = `/api/cart/${productId}`;
+      const url = `/cart/${productId}`;
       try {
         if (isInCart) {
-          await axios.delete(url, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await api.delete(url);
           setCart((prev) => prev.filter((id) => id !== productId));
         } else {
-          await axios.post(`/api/cart/${productId}`, {}, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await api.post(`/cart/${productId}`);
           setCart((prev) => [...prev, productId]);
         }
       } catch (err) {

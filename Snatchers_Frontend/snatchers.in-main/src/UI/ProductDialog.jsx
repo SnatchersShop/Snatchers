@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import api from '../api';
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Thumbs } from "swiper/modules";
 import "swiper/css";
@@ -63,7 +64,7 @@ const ProductDialog = () => {
         
         // Always fetch product data (no auth required)
         try {
-          const productRes = await axios.get(productUrl);
+          const productRes = await api.get(productUrl.replace('/api/', '/'));
           console.log("Product response:", productRes.data);
           setProduct(productRes.data);
         } catch (apiErr) {
@@ -125,12 +126,8 @@ const ProductDialog = () => {
   if (session && idToken) {
           try {
             const [cartRes, wishlistRes] = await Promise.all([
-              axios.get(`/api/cart`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-              }),
-              axios.get(`/api/wishlist`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-              })
+              api.get(`/cart`),
+              api.get(`/wishlist`)
             ]);
             const cartIds = cartRes.data.map((item) => item.product._id);
             const wishlistIds = wishlistRes.data.map((item) => 
@@ -179,7 +176,7 @@ const ProductDialog = () => {
         return na === nb;
       };
       try {
-        const res = await axios.get('/api/products');
+        const res = await api.get('/products');
         if (!mounted) return;
         const all = Array.isArray(res.data) ? res.data : [];
         const similar = all
@@ -230,19 +227,15 @@ const ProductDialog = () => {
       return;
     }
 
-    const url = `/api/wishlist/${product._id}`;
+    const url = `/wishlist/${product._id}`;
 
     try {
       if (isWishlisted) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.delete(url);
         setWishlist((prev) => prev.filter((id) => id !== product._id));
         window.dispatchEvent(new Event('wishlist:changed'));
       } else {
-        await axios.post(url, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post(url);
         setWishlist((prev) => [...prev, product._id]);
         window.dispatchEvent(new Event('wishlist:changed'));
       }
@@ -257,7 +250,7 @@ const ProductDialog = () => {
 
     // If logged in, call server API
     if (token) {
-      const url = `/api/cart/${product._id}`;
+      const url = `/cart/${product._id}`;
       try {
         if (isInCart) {
           await axios.delete(url, {
@@ -296,7 +289,7 @@ const ProductDialog = () => {
     // If logged in, use server API; otherwise use guest cart
     if (token) {
       try {
-        await axios.post(`/api/cart/${prod._id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        await api.post(`/cart/${prod._id}`);
         setCart((prev) => Array.from(new Set([...prev, prod._id])));
       } catch (err) {
         console.error('Error adding to cart:', err);
@@ -317,7 +310,7 @@ const ProductDialog = () => {
   const removeFromCartById = async (prodId) => {
     if (token) {
       try {
-        await axios.delete(`/api/cart/${prodId}`, { headers: { Authorization: `Bearer ${token}` } });
+        await api.delete(`/cart/${prodId}`);
         setCart((prev) => prev.filter((id) => id !== prodId));
       } catch (err) {
         console.error('Error removing from cart:', err);
@@ -339,10 +332,10 @@ const ProductDialog = () => {
     if (!token) { alert('Please login to manage wishlist'); return; }
     try {
       if (wishlist.includes(prod._id)) {
-        await axios.delete(`/api/wishlist/${prod._id}`, { headers: { Authorization: `Bearer ${token}` } });
+        await api.delete(`/wishlist/${prod._id}`);
         setWishlist((prev) => prev.filter((id) => id !== prod._id));
       } else {
-        await axios.post(`/api/wishlist/${prod._id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+        await api.post(`/wishlist/${prod._id}`);
         setWishlist((prev) => Array.from(new Set([...prev, prod._id])));
       }
       window.dispatchEvent(new Event('wishlist:changed'));

@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../api';
 import { getGuestCart } from '../utils/guestCart';
 
 const Navbar = () => {
@@ -126,12 +127,8 @@ const Navbar = () => {
         if (!token) throw new Error('No auth token available');
 
         const [wishlistRes, cartRes] = await Promise.all([
-          axios.get(`/api/wishlist`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`/api/cart`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          api.get(`/wishlist`),
+          api.get(`/cart`),
         ]);
 
         setWishlistCount(wishlistRes.data.length || 0);

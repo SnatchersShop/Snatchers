@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
 import { motion } from "framer-motion";
 import axios from "axios";
+import api from '../api';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { guestCartIncludes, addGuestCartItem, removeGuestCartItem } from '../utils/guestCart';
 import productsFallback from '../Data/ProductData';
@@ -27,7 +28,7 @@ const Womens = () => {
         
         // Always fetch products (no auth required)
         try {
-          const productsRes = await axios.get(`/api/products`);
+          const productsRes = await api.get(`/products`);
           setProducts(productsRes.data);
         } catch (err) {
           console.warn('Womens: product API failed, using local fallback', err?.message || err);
@@ -73,12 +74,8 @@ const Womens = () => {
 
           try {
             const [wishlistRes, cartRes] = await Promise.all([
-              axios.get(`/api/wishlist`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-              }),
-              axios.get(`/api/cart`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-              }),
+              api.get(`/wishlist`),
+              api.get(`/cart`),
             ]);
 
             const wishlistedIds = wishlistRes.data.map((item) =>
@@ -117,20 +114,16 @@ const Womens = () => {
     }
 
     const isWishlisted = wishlist.includes(productId);
-  const url = `/api/wishlist/${productId}`;
+  const url = `/wishlist/${productId}`;
 
     try {
-      if (isWishlisted) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        if (isWishlisted) {
+        await api.delete(url);
         setWishlist((prev) => prev.filter((id) => id !== productId));
         // notify other parts of the app that wishlist changed
         window.dispatchEvent(new Event('wishlist:changed'));
       } else {
-        await axios.post(url, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post(url);
         setWishlist((prev) => [...prev, productId]);
         window.dispatchEvent(new Event('wishlist:changed'));
       }
@@ -144,17 +137,13 @@ const Womens = () => {
     const isInCart = cart.includes(productId) || guestCartIncludes(productId);
 
     if (token) {
-      const url = `/api/cart/${productId}`;
+      const url = `/cart/${productId}`;
       try {
         if (isInCart) {
-          await axios.delete(url, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await api.delete(url);
           setCart((prev) => prev.filter((id) => id !== productId));
         } else {
-          await axios.post(url, {}, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await api.post(url);
           setCart((prev) => [...prev, productId]);
         }
       } catch (err) {

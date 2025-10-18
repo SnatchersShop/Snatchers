@@ -21,7 +21,7 @@ export default function Auth() {
     try {
       if (useServer) {
         const emailNormalized = String(email || '').trim().toLowerCase();
-        const res = await axios.post('/api/login', { email: emailNormalized, password }, { withCredentials: true });
+        const res = await api.post('/login', { email: emailNormalized, password });
         console.log('Server login result:', res.data);
         toast.success('Login successful!');
         setTimeout(() => navigate('/'), 1000);
@@ -41,11 +41,11 @@ export default function Auth() {
       }
 
       try {
-        const res = await axios.post(`/api/login`, { idToken });
+        const res = await api.post(`/login`, { idToken });
         const data = res.data;
         localStorage.setItem('token', data.token);
         // Use the api instance which auto-attaches Authorization header
-        const userRes = await api.get(`/api/user/me`);
+        const userRes = await api.get(`/user/me`);
         console.log('Authenticated user (Cognito):', userRes.data);
         toast.success('Login successful!');
         setTimeout(() => navigate('/'), 1500);
@@ -66,7 +66,8 @@ export default function Auth() {
       const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
       try {
         if (useServer) {
-          const res = await fetch(`/api/user/me`, { credentials: 'include', cache: 'no-store' });
+          const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
+          const res = await fetch(backend + '/api/user/me', { credentials: 'include', cache: 'no-store' });
           if (res.ok) {
             navigate('/profile');
             return;

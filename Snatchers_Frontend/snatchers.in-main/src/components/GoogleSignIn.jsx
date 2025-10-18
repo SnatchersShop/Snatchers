@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import axios from 'axios';
+import api from '../api';
 
 export default function GoogleSignIn({ onSuccess, onError }) {
   const btnRef = useRef(null);
@@ -42,7 +43,7 @@ export default function GoogleSignIn({ onSuccess, onError }) {
       const idToken = response.credential;
       if (!idToken) return onError?.('No ID token from Google');
       // Send to backend to verify and create session
-      axios.post('/api/google-login', { idToken }, { withCredentials: true })
+      api.post('/google-login', { idToken })
         .then((res) => onSuccess?.(res.data))
         .catch((err) => onError?.(err?.response?.data || err.message || 'Google login failed'));
     }

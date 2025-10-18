@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import api from '../api';
 import {
   getGuestCart,
   addGuestCartItem,
@@ -27,9 +28,7 @@ const Cart = () => {
         return;
       }
 
-      const res = await axios.get(`/api/cart`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get(`/cart`);
 
       const cartData = Array.isArray(res.data)
         ? res.data.map((item) => item.product || item)
@@ -53,9 +52,7 @@ const Cart = () => {
         return;
       }
 
-      await axios.delete(`/api/cart/${productId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/cart/${productId}`);
 
       setCartItems((prev) => prev.filter((item) => item._id !== productId));
     } catch (error) {
@@ -73,9 +70,7 @@ const Cart = () => {
         return;
       }
 
-      await axios.post(`/api/cart`, { productId: product._id }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.post(`/cart`, { productId: product._id });
 
       setCartItems((prev) => [...prev, product]);
     } catch (error) {

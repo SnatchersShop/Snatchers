@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from 'axios';
+import api from '../api';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -12,7 +13,8 @@ export default function Register() {
       try {
         const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
         if (useServer) {
-          const res = await fetch(`/api/user/me`, { credentials: 'include', cache: 'no-store' });
+          // server-session check: call the backend host directly so Nginx doesn't intercept
+          const res = await fetch((process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in') + '/api/user/me', { credentials: 'include', cache: 'no-store' });
           if (res.ok) {
             navigate('/profile');
             return;
@@ -37,7 +39,7 @@ export default function Register() {
   async function handleRegister() {
     try {
       const emailNormalized = String(email || '').trim().toLowerCase();
-      const res = await axios.post('/api/register', { email: emailNormalized, password, name }, { withCredentials: true });
+      const res = await api.post('/register', { email: emailNormalized, password, name });
       toast.success('Registration successful! Redirecting...');
       setTimeout(() => navigate('/'), 1200);
     } catch (err) {

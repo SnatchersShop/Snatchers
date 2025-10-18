@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
+import api from '../api';
 import ProductCard from '../UI/ProductCard';
 import productsFallback from '../Data/ProductData';
 import { useNavigate } from 'react-router-dom';
@@ -22,8 +23,7 @@ export default function ProductSection({ title = 'Products', limit = 12 }) {
       setLoading(true);
       setError(null);
       try {
-  const apiBase = '';
-        const res = await axios.get(`${apiBase}/api/products`);
+  const res = await api.get('/products');
         if (!mounted) return;
         setProducts(Array.isArray(res.data) ? res.data.slice(0, limit) : []);
       } catch (err) {

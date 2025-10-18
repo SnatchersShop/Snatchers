@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import api from '../api';
 import ProductCard from "../UI/ProductCard";
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { guestCartIncludes, addGuestCartItem, removeGuestCartItem } from '../utils/guestCart';
@@ -27,7 +28,7 @@ const Shop = () => {
         
         // Always fetch products (no auth required)
         try {
-          const productsRes = await axios.get(`/api/products`);
+          const productsRes = await api.get(`/products`);
           setProducts(productsRes.data);
         } catch (err) {
           console.warn('Shop: product API failed, using local fallback', err?.message || err);
@@ -55,12 +56,8 @@ const Shop = () => {
 
           try {
             const [wishlistRes, cartRes] = await Promise.all([
-              axios.get(`/api/wishlist`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-              }),
-              axios.get(`/api/cart`, {
-                headers: { Authorization: `Bearer ${idToken}` },
-              }),
+              api.get(`/wishlist`),
+              api.get(`/cart`),
             ]);
 
             const wishlistedIds = wishlistRes.data.map((item) =>

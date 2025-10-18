@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
+import api from '../api';
 import ProductCard from '../UI/ProductCard';
 import { useNavigate } from 'react-router-dom';
 import AnimatedHeading from '../UI/AnimatedHeading'; // Adjust path as needed
@@ -33,9 +34,7 @@ const Wishlist = () => {
       if (token) {
         setTokenAvailable(true);
         // Logged-in: fetch from server and also include any local wishlist (merge de-duplicated)
-  const res = await axios.get(`/api/wishlist`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  const res = await api.get(`/wishlist`);
 
         const serverProducts = res.data || [];
 
@@ -45,7 +44,7 @@ const Wishlist = () => {
         let localProducts = [];
         if (localIds.length > 0) {
           // Fetch product details in parallel for local ids not present on server
-          const fetches = localIds.map(id => axios.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
+          const fetches = localIds.map(id => api.get(`/products/${id}`).then(r => r.data).catch(() => null));
           const fetched = await Promise.all(fetches);
           localProducts = fetched.filter(Boolean);
         }
@@ -60,7 +59,7 @@ const Wishlist = () => {
           return;
         }
 
-  const fetches = localIds.map(id => axios.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
+  const fetches = localIds.map(id => api.get(`/products/${id}`).then(r => r.data).catch(() => null));
         const fetched = await Promise.all(fetches);
         setWishlist(fetched.filter(Boolean));
       }
@@ -88,9 +87,7 @@ const Wishlist = () => {
       }
 
       if (token) {
-  await axios.delete(`/api/wishlist/${productId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  await api.delete(`/wishlist/${productId}`);
 
         setWishlist((prev) => prev.filter((item) => item._id !== productId));
       } else {

@@ -14,7 +14,8 @@ export default function ProtectedRoute({ children }) {
         // 1) try server session
         if (process.env.REACT_APP_USE_SERVER_AUTH === 'true') {
           try {
-            const res = await fetch('/api/user/me', { credentials: 'include', cache: 'no-store' });
+            const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
+            const res = await fetch(backend + '/api/user/me', { credentials: 'include', cache: 'no-store' });
             if (res.ok) {
               if (mounted) setAuthenticated(true);
               return;

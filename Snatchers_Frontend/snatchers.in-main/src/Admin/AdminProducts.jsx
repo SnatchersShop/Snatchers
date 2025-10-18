@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import api from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function AdminProducts() {
@@ -11,7 +12,7 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/products');
+      const res = await api.get('/products');
       setProducts(res.data);
     } catch (err) {
       console.error(err);
@@ -26,7 +27,7 @@ export default function AdminProducts() {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this product permanently?')) return;
     try {
-      await axios.delete(`/api/products/${id}`);
+      await api.delete(`/products/${id}`);
       setProducts((p) => p.filter((x) => x._id !== id));
     } catch (err) {
       console.error(err);

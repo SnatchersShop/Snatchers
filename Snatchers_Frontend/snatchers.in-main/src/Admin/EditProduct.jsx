@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { useParams, useNavigate } from 'react-router-dom';
 
 export default function EditProduct() {
@@ -13,7 +13,7 @@ export default function EditProduct() {
   useEffect(() => {
     async function fetch() {
       try {
-        const res = await axios.get(`/api/products/${id}`);
+        const res = await api.get(`/products/${id}`);
         setProduct(res.data);
         setForm({
           title: res.data.title || '',
@@ -62,7 +62,7 @@ export default function EditProduct() {
         offerPrice: form.offerPrice === '' ? null : Number(form.offerPrice),
         rating: form.rating === '' ? 0 : Number(form.rating),
       };
-      const res = await axios.put(`/api/products/${id}`, payload);
+      const res = await api.put(`/products/${id}`, payload);
       alert('Product updated');
       navigate('/admin/products');
     } catch (err) {
