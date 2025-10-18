@@ -26,40 +26,39 @@ const BuyNowComponent = () => {
 
   // Prefill email from backend
   useEffect(() => {
-    const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
-    const token = localStorage.getItem('token');
-    if (useServer) {
-      // Try same-origin request which will send HTTP-only session cookie set by backend
-      const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
-      try {
-        const resp = await api.get(backend + `/api/user/me`, { headers: { 'Cache-Control': 'no-store' } });
-        const user = resp.data && resp.data.user ? resp.data.user : resp.data;
-        setForm((prev) => ({ ...prev, email: user.email || '' }));
-      } catch (error) {
-        console.log('Authentication error (server):', error.response?.status);
-        if (error.response?.status === 401) {
-          setAuthError('Your session has expired. Please login again to continue.');
-        } else {
-          setAuthError('Unable to load user information. Please try again.');
+    const run = async () => {
+      const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
+      const token = localStorage.getItem('token');
+      if (useServer) {
+        // Try same-origin request which will send HTTP-only session cookie set by backend
+        const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
+        try {
+          const resp = await api.get(backend + `/api/user/me`, { headers: { 'Cache-Control': 'no-store' } });
+          const user = resp.data && resp.data.user ? resp.data.user : resp.data;
+          setForm((prev) => ({ ...prev, email: user.email || '' }));
+        } catch (error) {
+          console.log('Authentication error (server):', error.response?.status);
+          if (error.response?.status === 401) {
+            setAuthError('Your session has expired. Please login again to continue.');
+          } else {
+            setAuthError('Unable to load user information. Please try again.');
+          }
         }
+        return;
       }
-      return;
-    }
 
-    if (!token) {
-      console.log('No authentication token found');
-      return;
-    }
+      if (!token) {
+        console.log('No authentication token found');
+        return;
+      }
 
-    axios
-      .get(`${API_BASE_URL}/api/user/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((response) => {
+      try {
+        const response = await api.get(`${API_BASE_URL}/api/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const user = response.data && response.data.user ? response.data.user : response.data;
         setForm((prev) => ({ ...prev, email: user.email || '' }));
-      })
-      .catch((error) => {
+      } catch (error) {
         console.log('Authentication error:', error.response?.status);
         if (error.response?.status === 401) {
           localStorage.removeItem('token');
@@ -68,20 +67,25 @@ const BuyNowComponent = () => {
         } else {
           setAuthError('Unable to load user information. Please try again.');
         }
-      });
+      }
+    };
+    run();
   }, []);
 
   useEffect(() => {
-    setLoadingProduct(true);
-    try {
-      const resp = await api.get((process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in') + `/api/products/${productId}`);
-      setProduct(resp.data);
-      setLoadingProduct(false);
-    } catch (error) {
-      console.log("Product fetch error:", error.response?.status);
-      setProduct(null);
-      setLoadingProduct(false);
-    }
+    const load = async () => {
+      setLoadingProduct(true);
+      try {
+        const resp = await api.get((process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in') + `/api/products/${productId}`);
+        setProduct(resp.data);
+      } catch (error) {
+        console.log("Product fetch error:", error.response?.status);
+        setProduct(null);
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+    load();
   }, [productId]);
 
   const handleChange = (e) =>
