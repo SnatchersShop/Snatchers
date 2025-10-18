@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import api from '../api';
-import api from '../api';
+
 import ProductCard from '../UI/ProductCard';
 import { useNavigate } from 'react-router-dom';
 import AnimatedHeading from '../UI/AnimatedHeading'; // Adjust path as needed
