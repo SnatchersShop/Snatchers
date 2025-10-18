@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "../UI/ProductCard";
-import axios from "axios";
+import api from '../api';
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { LogOut, Mail, User } from "lucide-react";
 import { useAuth } from '../contexts/AuthContext.jsx';
+import api from '../api';
 import { useNavigate } from "react-router-dom";
 import Avatar from "react-avatar";
 
