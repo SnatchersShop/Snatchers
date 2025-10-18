@@ -106,8 +106,9 @@ const BuyNowComponent = () => {
     }
 
     try {
+      const sellingPrice = product.offerPrice ?? product.price;
       const paymentPayload = {
-        amount: product.price,
+        amount: sellingPrice,
         currency: "INR",
         receipt: "rcptid_" + Date.now(),
       };
@@ -145,10 +146,10 @@ const BuyNowComponent = () => {
                   name: product.title || product.name,
                   sku: product.sku || product._id,
                   units: 1,
-                  selling_price: product.price,
+                  selling_price: sellingPrice,
                 },
               ],
-              sub_total: product.price * 1,
+              sub_total: sellingPrice * 1,
               length: 20.32,
               breadth: 20.32,
               height: 3.81,
@@ -166,7 +167,7 @@ const BuyNowComponent = () => {
               productId: product._id,
               productTitle: product.title || product.name,
               productImage: product.images?.[0] || "/product-placeholder.jpg",
-              price: product.price,
+              price: sellingPrice,
               orderDate: new Date().toISOString().slice(0, 10),
               status: "Ordered",
               customerEmail: form.email,
@@ -321,7 +322,14 @@ const BuyNowComponent = () => {
                 
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-black">₹{product.price}</span>
+                    { (product.offerPrice ?? product.offerPrice === 0) ? (
+                      <>
+                        <span className="text-lg text-gray-500 line-through">₹{product.originalPrice ?? product.price}</span>
+                        <span className="text-2xl font-bold text-red-600">₹{product.offerPrice}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-bold text-black">₹{product.originalPrice ?? product.price}</span>
+                    ) }
                   </div>
                   
                   {product.category && (

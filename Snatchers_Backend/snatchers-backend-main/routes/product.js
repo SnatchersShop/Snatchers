@@ -34,7 +34,13 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.status(200).json(product);
+    // Return full product but also include explicit price fields to avoid clients
+    // accidentally receiving only a single price value. This keeps backward
+    // compatibility while providing clear field names used by the frontend.
+    const prodObj = product.toObject ? product.toObject() : product;
+    prodObj.originalPrice = product.price;
+    prodObj.offerPrice = product.offerPrice ?? null;
+    res.status(200).json(prodObj);
   } catch (err) {
     console.error("Error fetching product:", err);
     res.status(500).json({ message: "Server error" });

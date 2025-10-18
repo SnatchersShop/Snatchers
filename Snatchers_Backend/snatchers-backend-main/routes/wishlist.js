@@ -47,6 +47,28 @@ router.post("/:productId", verifyToken, async (req, res) => {
   }
 });
 
+// POST: Add product to wishlist (body variant) - convenient for SPA clients
+router.post("/add", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
+    const { productId } = req.body;
+
+    if (!productId) return res.status(400).json({ message: 'productId required in request body' });
+
+    let wishlist = await Wishlist.findOne({ userId });
+    if (!wishlist) {
+      wishlist = new Wishlist({ userId, products: [productId] });
+    } else if (!wishlist.products.includes(productId)) {
+      wishlist.products.push(productId);
+    }
+    await wishlist.save();
+    res.status(200).json({ message: "Added to wishlist", wishlist });
+  } catch (err) {
+    console.error('Error in /api/wishlist/add:', err);
+    res.status(500).json({ message: "Error adding to wishlist", error: err?.message || err });
+  }
+});
+
 // DELETE: Remove product from wishlist
 router.delete("/:productId", verifyToken, async (req, res) => {
   try {

@@ -14,6 +14,7 @@ import {
 } from '../utils/guestCart';
 import { motion } from "framer-motion";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { toast } from 'react-toastify';
 import products from "../Data/ProductData";
 import ProductCard from "./ProductCard";
 
@@ -226,21 +227,21 @@ const ProductDialog = () => {
       return;
     }
 
-    const url = `/api/wishlist/${product._id}`;
-
     try {
       if (isWishlisted) {
-        await api.delete(url);
+        await api.delete(`/api/wishlist/${product._id}`);
         setWishlist((prev) => prev.filter((id) => id !== product._id));
         window.dispatchEvent(new Event('wishlist:changed'));
+        toast.success('Removed from wishlist');
       } else {
-        await api.post(url);
+        await api.post(`/api/wishlist/add`, { productId: product._id });
         setWishlist((prev) => [...prev, product._id]);
         window.dispatchEvent(new Event('wishlist:changed'));
+        toast.success('Added to wishlist');
       }
     } catch (err) {
       console.error("Error updating wishlist:", err);
-      alert("Unable to update wishlist. Please try again later or contact support.");
+      toast.error('Unable to update wishlist.');
     }
   };
 

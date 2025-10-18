@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { WishlistProvider } from './contexts/WishlistContext.jsx';
@@ -19,7 +22,9 @@ root.render(
     <BrowserRouter>
       <AuthProvider>
         <WishlistProvider>
+          <ScrollToTop />
           <App />
+          <ToastContainer position="top-center" autoClose={1500} hideProgressBar />
         </WishlistProvider>
       </AuthProvider>
     </BrowserRouter>

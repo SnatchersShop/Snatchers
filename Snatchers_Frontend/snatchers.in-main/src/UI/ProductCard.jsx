@@ -60,25 +60,18 @@ const ProductCard = ({
         </div>
       )}
 
-      {/* Wishlist heart icon */}
-      <div
+      {/* Wishlist heart icon as a button to avoid unwanted navigation */}
+      <button
+        type="button"
         onClick={(e) => {
           e.stopPropagation();
-          onToggleWishlist?.();
+          onToggleWishlist?.(e);
         }}
         className="absolute top-2 right-2 z-20 text-xl text-pink-500 hover:text-pink-700 transition-colors"
         aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.stopPropagation();
-            onToggleWishlist?.();
-          }
-        }}
       >
         {wishlisted ? <FaHeart /> : <FaRegHeart />}
-      </div>
+      </button>
 
       {/* Product image */}
       <div className="mb-2.5 sm:mb-3 product-thumb overflow-hidden rounded-md">

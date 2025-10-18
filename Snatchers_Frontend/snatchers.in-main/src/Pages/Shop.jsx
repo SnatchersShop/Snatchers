@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from '../api';
+import { toast } from 'react-toastify';
 import ProductCard from "../UI/ProductCard";
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { guestCartIncludes, addGuestCartItem, removeGuestCartItem } from '../utils/guestCart';
@@ -95,20 +96,22 @@ const Shop = () => {
     }
 
     const isWishlisted = wishlist.includes(productId);
-  const url = `/api/wishlist/${productId}`;
-
     try {
-        if (isWishlisted) {
-          await api.delete(url);
+      if (isWishlisted) {
+        await api.delete(`/api/wishlist/${productId}`);
         setWishlist((prev) => prev.filter((id) => id !== productId));
         window.dispatchEvent(new Event('wishlist:changed'));
+        toast.success('Removed from wishlist');
       } else {
-          await api.post(url);
+        // use the new body-based endpoint for adding
+        await api.post(`/api/wishlist/add`, { productId });
         setWishlist((prev) => [...prev, productId]);
         window.dispatchEvent(new Event('wishlist:changed'));
+        toast.success('Added to wishlist');
       }
     } catch (err) {
       console.error("Error updating wishlist:", err);
+      toast.error('Unable to update wishlist');
     }
   };
 
