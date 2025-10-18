@@ -99,16 +99,12 @@ const Shop = () => {
   const url = `/api/wishlist/${productId}`;
 
     try {
-      if (isWishlisted) {
-        await axios.delete(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        if (isWishlisted) {
+          await api.delete(url);
         setWishlist((prev) => prev.filter((id) => id !== productId));
         window.dispatchEvent(new Event('wishlist:changed'));
       } else {
-        await axios.post(url, {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+          await api.post(url);
         setWishlist((prev) => [...prev, productId]);
         window.dispatchEvent(new Event('wishlist:changed'));
       }
@@ -125,14 +121,10 @@ const Shop = () => {
       const url = `/api/cart/${productId}`;
       try {
         if (isInCart) {
-          await axios.delete(url, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+            await api.delete(url);
           setCart((prev) => prev.filter((id) => id !== productId));
         } else {
-          await axios.post(url, {}, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+            await api.post(url);
           setCart((prev) => [...prev, productId]);
         }
       } catch (err) {

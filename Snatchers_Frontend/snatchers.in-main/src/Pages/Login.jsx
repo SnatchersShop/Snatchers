@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import axios from 'axios';
 import api from '../api';
 
 export default function Auth() {
@@ -19,9 +18,9 @@ export default function Auth() {
   async function handleAuth() {
     const useServer = process.env.REACT_APP_USE_SERVER_AUTH === 'true';
     try {
-      if (useServer) {
+        if (useServer) {
         const emailNormalized = String(email || '').trim().toLowerCase();
-        const res = await api.post('/login', { email: emailNormalized, password });
+        const res = await api.post('/api/login', { email: emailNormalized, password });
         console.log('Server login result:', res.data);
         toast.success('Login successful!');
         setTimeout(() => navigate('/'), 1000);
@@ -41,7 +40,7 @@ export default function Auth() {
       }
 
       try {
-        const res = await api.post(`/login`, { idToken });
+        const res = await api.post(`/api/login`, { idToken });
         const data = res.data;
         localStorage.setItem('token', data.token);
         // Use the api instance which auto-attaches Authorization header

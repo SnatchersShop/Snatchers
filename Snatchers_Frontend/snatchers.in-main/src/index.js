@@ -6,40 +6,12 @@ import { BrowserRouter } from 'react-router-dom';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { WishlistProvider } from './contexts/WishlistContext.jsx';
-import axios from 'axios';
+import './api';
 
-// Global axios defaults: include credentials so cookies (HTTP-only session) are sent
-axios.defaults.withCredentials = true;
-// If an API base URL is provided at build time, always use it. This lets the
-// production build target the backend host (for example: https://api.snatchers.in)
-// while dev still benefits from the CRA proxy when env var is not set.
-if (process.env.REACT_APP_API_BASE_URL) {
-  axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL;
-}
-
-// Ensure Authorization header is attached when a token is present in localStorage.
-// The app stores the token under the key 'token' (see Login.jsx). We use a
-// request interceptor so the latest token is always picked up (in case it
-// changes during the SPA lifetime).
-axios.interceptors.request.use((config) => {
-  try {
-    const stored = localStorage.getItem('token');
-    if (stored) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${stored}`;
-    }
-  } catch (e) {
-    // ignore localStorage errors (e.g., SSR or privacy settings)
-  }
-  return config;
-}, (error) => Promise.reject(error));
-
-// Helper for logout flows to remove the local token and Authorization header
-// (call this when you log out a user client-side)
-export function clearAuthToken() {
-  try { localStorage.removeItem('token'); } catch (e) {}
-  try { delete axios.defaults.headers.common.Authorization; } catch (e) {}
-}
+// Importing `./api` ensures the centralized axios instance is created and
+// its interceptors are registered (Authorization header + response handling).
+// Use `localStorage` token management via the api instance instead of global axios.
+export { default as clearAuthToken } from './utils/clearAuthToken';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

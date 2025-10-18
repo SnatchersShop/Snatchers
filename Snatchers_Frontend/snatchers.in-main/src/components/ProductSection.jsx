@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import axios from 'axios';
+import api from '../api';
 import api from '../api';
 import ProductCard from '../UI/ProductCard';
 import productsFallback from '../Data/ProductData';

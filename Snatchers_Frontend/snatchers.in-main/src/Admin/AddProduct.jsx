@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const AddProduct = () => {
   const [form, setForm] = useState({
@@ -71,7 +71,7 @@ const AddProduct = () => {
     });
 
     try {
-  const res = await axios.post(`/api/products`, formData);
+        const res = await api.post(`/api/products`, formData);
       console.log(res.data);
       alert('✅ Product uploaded!');
     } catch (err) {

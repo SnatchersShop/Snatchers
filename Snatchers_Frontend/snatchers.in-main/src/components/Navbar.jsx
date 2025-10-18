@@ -10,7 +10,6 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import api from '../api';
 import { getGuestCart } from '../utils/guestCart';
 
@@ -33,9 +32,9 @@ const Navbar = () => {
 
     if (value.length > 0) {
       try {
-  const res = await axios.get(`/search`, {
-          params: { q: value }
-        });
+    const res = await api.get(`/api/search`, {
+            params: { q: value }
+          });
         setSearchResults(res.data);
         setShowSuggestions(true);
       } catch (err) {
