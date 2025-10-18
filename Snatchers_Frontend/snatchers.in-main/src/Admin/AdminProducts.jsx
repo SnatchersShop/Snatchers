@@ -12,7 +12,7 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/products');
+      const res = await api.get('/api/products');
       setProducts(res.data);
     } catch (err) {
       console.error(err);
@@ -27,7 +27,7 @@ export default function AdminProducts() {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this product permanently?')) return;
     try {
-      await api.delete(`/products/${id}`);
+      await api.delete(`/api/products/${id}`);
       setProducts((p) => p.filter((x) => x._id !== id));
     } catch (err) {
       console.error(err);

@@ -34,7 +34,7 @@ const Wishlist = () => {
       if (token) {
         setTokenAvailable(true);
         // Logged-in: fetch from server and also include any local wishlist (merge de-duplicated)
-  const res = await api.get(`/wishlist`);
+  const res = await api.get(`/api/wishlist`);
 
         const serverProducts = res.data || [];
 
@@ -44,7 +44,7 @@ const Wishlist = () => {
         let localProducts = [];
         if (localIds.length > 0) {
           // Fetch product details in parallel for local ids not present on server
-          const fetches = localIds.map(id => api.get(`/products/${id}`).then(r => r.data).catch(() => null));
+          const fetches = localIds.map(id => api.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
           const fetched = await Promise.all(fetches);
           localProducts = fetched.filter(Boolean);
         }
@@ -59,7 +59,7 @@ const Wishlist = () => {
           return;
         }
 
-  const fetches = localIds.map(id => api.get(`/products/${id}`).then(r => r.data).catch(() => null));
+  const fetches = localIds.map(id => api.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
         const fetched = await Promise.all(fetches);
         setWishlist(fetched.filter(Boolean));
       }

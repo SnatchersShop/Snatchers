@@ -45,7 +45,7 @@ export default function Auth() {
         const data = res.data;
         localStorage.setItem('token', data.token);
         // Use the api instance which auto-attaches Authorization header
-        const userRes = await api.get(`/user/me`);
+        const userRes = await api.get(`/api/user/me`);
         console.log('Authenticated user (Cognito):', userRes.data);
         toast.success('Login successful!');
         setTimeout(() => navigate('/'), 1500);

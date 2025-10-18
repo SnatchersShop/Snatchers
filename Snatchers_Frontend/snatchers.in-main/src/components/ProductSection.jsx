@@ -23,7 +23,7 @@ export default function ProductSection({ title = 'Products', limit = 12 }) {
       setLoading(true);
       setError(null);
       try {
-  const res = await api.get('/products');
+  const res = await api.get('/api/products');
         if (!mounted) return;
         setProducts(Array.isArray(res.data) ? res.data.slice(0, limit) : []);
       } catch (err) {

@@ -13,7 +13,7 @@ export default function EditProduct() {
   useEffect(() => {
     async function fetch() {
       try {
-        const res = await api.get(`/products/${id}`);
+        const res = await api.get(`/api/products/${id}`);
         setProduct(res.data);
         setForm({
           title: res.data.title || '',

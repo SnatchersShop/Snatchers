@@ -39,7 +39,7 @@ const ProfilePage = () => {
           return;
         }
         // Use api instance to fetch user data when using token-based auth
-        const userRes = await api.get('/user/me');
+        const userRes = await api.get('/api/user/me');
         const data = userRes.data;
         setUser(data && data.user ? data.user : data);
         setLoading(false);
@@ -78,7 +78,7 @@ const ProfilePage = () => {
           }
         } else if (token) {
           try {
-            const res = await api.get(`/orders/email/${encodeURIComponent(user.email)}`);
+            const res = await api.get(`/api/orders/email/${encodeURIComponent(user.email)}`);
             if (res.status === 200) {
               const data = res.data;
               const apiOrders = data.orders || [];

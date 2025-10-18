@@ -28,7 +28,7 @@ const Cart = () => {
         return;
       }
 
-      const res = await api.get(`/cart`);
+      const res = await api.get(`/api/cart`);
 
       const cartData = Array.isArray(res.data)
         ? res.data.map((item) => item.product || item)

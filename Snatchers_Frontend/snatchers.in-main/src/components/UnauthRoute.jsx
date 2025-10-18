@@ -36,7 +36,7 @@ export default function UnauthRoute({ children }) {
           const tokenCheck = localStorage.getItem('token');
           if (tokenCheck) {
             // Use api (axios) which will add the token automatically
-            const userRes = await api.get('/user/me');
+            const userRes = await api.get('/api/user/me');
             if (userRes && userRes.status === 200) {
               if (mounted) setAuthenticated(true);
               return;

@@ -28,7 +28,7 @@ const NewProducts = () => {
         const idToken = session ? session.getIdToken().getJwtToken() : null;
         
         // Always fetch products (no auth required)
-  const productRes = await api.get(`/products`);
+  const productRes = await api.get(`/api/products`);
         const sorted = productRes.data.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
@@ -40,8 +40,8 @@ const NewProducts = () => {
 
           try {
             const [wishlistRes, cartRes] = await Promise.all([
-              api.get(`/wishlist`),
-              api.get(`/cart`),
+              api.get(`/api/wishlist`),
+              api.get(`/api/cart`),
             ]);
 
             const wishlistedIds = wishlistRes.data.map((item) =>

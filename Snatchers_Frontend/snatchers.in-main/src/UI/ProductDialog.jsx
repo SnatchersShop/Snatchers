@@ -64,7 +64,7 @@ const ProductDialog = () => {
         
         // Always fetch product data (no auth required)
         try {
-          const productRes = await api.get(productUrl.replace('/api/', '/'));
+          const productRes = await api.get(productUrl);
           console.log("Product response:", productRes.data);
           setProduct(productRes.data);
         } catch (apiErr) {
@@ -126,8 +126,8 @@ const ProductDialog = () => {
   if (session && idToken) {
           try {
             const [cartRes, wishlistRes] = await Promise.all([
-              api.get(`/cart`),
-              api.get(`/wishlist`)
+              api.get(`/api/cart`),
+              api.get(`/api/wishlist`)
             ]);
             const cartIds = cartRes.data.map((item) => item.product._id);
             const wishlistIds = wishlistRes.data.map((item) => 
@@ -253,14 +253,10 @@ const ProductDialog = () => {
       const url = `/cart/${product._id}`;
       try {
         if (isInCart) {
-          await axios.delete(url, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await api.delete(url);
           setCart((prev) => prev.filter((id) => id !== product._id));
         } else {
-          await axios.post(url, {}, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          await api.post(url);
           setCart((prev) => [...prev, product._id]);
         }
       } catch (err) {

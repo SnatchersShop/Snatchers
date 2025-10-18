@@ -127,8 +127,8 @@ const Navbar = () => {
         if (!token) throw new Error('No auth token available');
 
         const [wishlistRes, cartRes] = await Promise.all([
-          api.get(`/wishlist`),
-          api.get(`/cart`),
+          api.get(`/api/wishlist`),
+          api.get(`/api/cart`),
         ]);
 
         setWishlistCount(wishlistRes.data.length || 0);

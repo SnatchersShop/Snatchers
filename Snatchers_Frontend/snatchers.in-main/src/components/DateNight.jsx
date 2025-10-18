@@ -62,7 +62,7 @@ const DateNight = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-          const res = await api.get(`/products`);
+          const res = await api.get(`/api/products`);
         setProducts(res.data);
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -75,7 +75,7 @@ const DateNight = () => {
         return;
       }
       try {
-          const res = await api.get(`/wishlist`);
+          const res = await api.get(`/api/wishlist`);
         const productIds = res.data.map((p) => p._id);
         setWishlist(productIds);
       } catch (err) {
@@ -91,7 +91,7 @@ const DateNight = () => {
         return;
       }
       try {
-          const res = await api.get(`/cart`);
+          const res = await api.get(`/api/cart`);
         const productIds = res.data.map((item) =>
           item.product ? item.product._id : item._id // handle nested structure if needed
         );

@@ -29,7 +29,7 @@ const Mens = () => {
         
         // Always fetch products (no auth required)
         try {
-          const productsRes = await api.get(`/products`);
+          const productsRes = await api.get(`/api/products`);
           setProducts(productsRes.data);
         } catch (err) {
           console.warn('Mens: product API failed, using local fallback', err?.message || err);
@@ -75,8 +75,8 @@ const Mens = () => {
 
           try {
             const [wishlistRes, cartRes] = await Promise.all([
-              api.get(`/wishlist`),
-              api.get(`/cart`),
+              api.get(`/api/wishlist`),
+              api.get(`/api/cart`),
             ]);
 
             const wishlistedIds = wishlistRes.data.map((item) =>
