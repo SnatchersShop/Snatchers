@@ -58,33 +58,44 @@ const verifyToken = async (req, res, next) => {
 // falls back to token verification. It attaches req.user and req.authId.
 export const isAuthenticated = async (req, res, next) => {
   try {
+    // 1. Ensure session and session.userInfo exist before accessing properties
     if (req.session && req.session.userInfo) {
+      const si = req.session.userInfo || {};
+
+      // Try to resolve the user by common identifiers in the session
+      let user = null;
       try {
-        const si = req.session.userInfo || {};
-        let user = null;
-        if (si.uid) {
+        if (si._id) {
+          user = await User.findById(si._id).select('-password');
+        }
+        if (!user && si.uid) {
           user = await User.findOne({ uid: si.uid }).select('-password');
         }
         if (!user && si.email) {
           user = await User.findOne({ email: si.email }).select('-password');
         }
-        if (!user) {
-          req.user = { uid: si.uid || si.sub, email: si.email, name: si.name };
-          req.authId = String(si.uid || si.sub || si.email || '');
-          return next();
-        }
+      } catch (lookupErr) {
+        console.error('[isAuthenticated] user lookup error:', lookupErr);
+        // If DB lookup fails, return 500 to indicate an internal issue
+        return res.status(500).json({ error: 'Server error during auth' });
+      }
 
+      if (user) {
         req.user = user;
         req.authId = String(user.uid || user._id || user.sub || user.email || '');
         return next();
-      } catch (err) {
-        console.error('[isAuthenticated] session lookup error:', err);
-        return res.status(500).json({ error: 'Server error during auth' });
       }
+
+      // If session exists but user was not found in DB, still treat as authenticated
+      // using session payload (defensive). This avoids crashing when user record
+      // was deleted but the session remains.
+      req.user = { uid: si.uid || si.sub || si._id, email: si.email, name: si.name };
+      req.authId = String(si.uid || si.sub || si._id || si.email || '');
+      return next();
     }
 
-    // No session - delegate to token verifier
-    return verifyToken(req, res, next);
+    // 2. No session present: respond with 401 Unauthorized (guest)
+    return res.status(401).json({ error: 'Not authenticated' });
   } catch (err) {
     console.error('[isAuthenticated] unexpected error:', err);
     return res.status(500).json({ error: 'Server error during auth' });
