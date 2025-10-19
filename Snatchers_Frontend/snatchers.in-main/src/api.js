@@ -1,9 +1,16 @@
 import axios from 'axios';
 
+// Decide base URL:
+// - If REACT_APP_API_BASE_URL is set, use it.
+// - If running on localhost, use a relative base URL so CRA proxy works.
+// - Otherwise default to production API host.
+const isLocalhost = typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+const resolvedBaseURL = process.env.REACT_APP_API_BASE_URL
+  || (isLocalhost ? '' : 'https://api.snatchers.in');
+
 // Create a new axios instance
 const api = axios.create({
-  // baseURL reads from environment, falling back to production API host
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in',
+  baseURL: resolvedBaseURL,
   // send cookies if backend uses cookie sessions; adjust if using token-only
   withCredentials: true,
 });

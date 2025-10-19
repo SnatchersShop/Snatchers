@@ -1,6 +1,7 @@
 // server.js
 import dotenv from 'dotenv';
 import fs from 'fs';
+import path from 'path';
 dotenv.config();
 
 // If MONGO_URI is not provided in the regular .env, try the repository deploy example
@@ -17,14 +18,12 @@ try {
   // ignore
 }
 import express from 'express';
-import cookie from 'cookie';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 // import dotenv from 'dotenv';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
-import path from 'path';
 import { Issuer, generators } from 'openid-client';
 
 // Firebase removed: using AWS Cognito for authentication instead
@@ -341,9 +340,7 @@ app.get('/', checkAuth, (req, res) => {
   });
 });
 
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
+// removed simple /api/health to avoid duplicate handler below
 
 // Health / diagnostic endpoint
 // Health handler function used for both /health and /api/health

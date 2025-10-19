@@ -63,19 +63,22 @@ router.post("/", upload.array("images", 5), async (req, res) => {
       occasion
     } = req.body;
 
-    const imageUrls = req.files.map((file) => file.path);
+    const imageUrls = Array.isArray(req.files) ? req.files.map((file) => file.path) : [];
     console.log("Received images:", imageUrls);
+    const normalizedOccasion = Array.isArray(occasion)
+      ? occasion
+      : (typeof occasion === 'string' && occasion.trim().length > 0 ? occasion.split(",").map(s => s.trim()).filter(Boolean) : []);
     const product = new Product({
       images: imageUrls,
       title,
-      price,
-      offerPrice: offerPrice ? Number(offerPrice) : null,
-      rating,
+      price: Number(price),
+      offerPrice: offerPrice !== undefined && offerPrice !== null && String(offerPrice).length ? Number(offerPrice) : null,
+      rating: rating !== undefined ? Number(rating) : 0,
       badgeText,
       badgeClass,
       description,
       category,
-      occasion: Array.isArray(occasion) ? occasion : occasion.split(",")
+      occasion: normalizedOccasion
     });
 
     await product.save();
@@ -125,6 +128,12 @@ router.put('/:id', async (req, res) => {
     if (update.offerPrice !== undefined) update.offerPrice = update.offerPrice === null ? null : Number(update.offerPrice);
     if (update.rating !== undefined) update.rating = Number(update.rating);
 
+    // Coerce occasion to string[] when provided
+    if (update.occasion !== undefined) {
+      update.occasion = Array.isArray(update.occasion)
+        ? update.occasion
+        : (typeof update.occasion === 'string' ? update.occasion.split(',').map(s => s.trim()).filter(Boolean) : []);
+    }
     const product = await Product.findByIdAndUpdate(id, update, { new: true });
     if (!product) return res.status(404).json({ message: 'Product not found' });
     return res.status(200).json({ success: true, product });

@@ -74,6 +74,31 @@ export const isAuthenticated = async (req, res, next) => {
         if (!user && si.email) {
           user = await User.findOne({ email: si.email }).select('-password');
         }
+
+        // If not found, create a minimal user record so downstream code has a stable ObjectId
+        if (!user) {
+          const newUser = new User({
+            uid: si.uid || `user-${Date.now()}`,
+            email: (si.email || '').trim().toLowerCase() || `unknown-${Date.now()}@example.com`,
+            name: si.name || '',
+            photoURL: si.picture || si.photoURL || si.photoUrl || '',
+          });
+          try {
+            user = await newUser.save();
+          } catch (createErr) {
+            // If unique constraints fail due to race, re-query by uid/email
+            try {
+              user = await User.findOne({
+                $or: [
+                  { uid: newUser.uid },
+                  { email: newUser.email },
+                ],
+              }).select('-password');
+            } catch (relookupErr) {
+              console.error('[isAuthenticated] user create/relookup failed:', relookupErr);
+            }
+          }
+        }
       } catch (lookupErr) {
         console.error('[isAuthenticated] user lookup error:', lookupErr);
         // If DB lookup fails, return 500 to indicate an internal issue

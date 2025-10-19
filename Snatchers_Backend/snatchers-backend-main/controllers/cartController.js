@@ -1,5 +1,27 @@
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
+import mongoose from 'mongoose';
+
+// Helper: resolve a stable Mongo ObjectId for the current user.
+// Prefers req.user._id (from DB), falls back to session userInfo._id.
+// If only a uid/email is present, this will try to find an existing User by
+// those attributes is handled by upstream auth middleware. Here we only
+// accept ObjectId-like values to satisfy the Cart schema.
+function resolveUserObjectId(req) {
+  const candidates = [
+    req.user?._id,
+    req.session?.userInfo?._id,
+  ].filter(Boolean);
+  for (const c of candidates) {
+    // If already an ObjectId instance
+    if (c && typeof c === 'object' && c._bsontype === 'ObjectID') return c;
+    // If it's a 24-char hex string, convert
+    if (typeof c === 'string' && mongoose.Types.ObjectId.isValid(c)) {
+      return new mongoose.Types.ObjectId(c);
+    }
+  }
+  return null;
+}
 
 // @desc    Add item to cart
 // @route   POST /api/cart/:productId
@@ -7,20 +29,25 @@ import Product from '../models/Product.js';
 export const addToCart = async (req, res) => {
   try {
     const { productId } = req.params;
-    const userId = req.session?.userInfo?._id || req.session?.userInfo?.uid || req.user?._id || req.user?.sub || req.user?.uid;
+    // Prefer DB ObjectId for cart ownership
+    const userObjectId = resolveUserObjectId(req);
+    if (!userObjectId) return res.status(401).json({ error: 'Not authenticated' });
 
-    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+    // Validate product id
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: 'Invalid product id' });
+    }
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).exec();
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
     const price = product.offerPrice || product.price || 0;
 
-    let cart = await Cart.findOne({ user }).exec().catch(() => null);
+    let cart = await Cart.findOne({ user: userObjectId }).exec().catch(() => null);
 
     if (!cart) {
       // create a new cart
-      cart = new Cart({ user: userId, items: [{ product: productId, quantity: 1, price }], totalPrice: price });
+      cart = new Cart({ user: userObjectId, items: [{ product: productId, quantity: 1, price }], totalPrice: price });
     } else {
       const existing = cart.items.find((it) => String(it.product) === String(productId));
       if (existing) {
@@ -46,10 +73,14 @@ export const addToCart = async (req, res) => {
 export const removeFromCart = async (req, res) => {
   try {
     const { productId } = req.params;
-    const userId = req.session?.userInfo?._id || req.session?.userInfo?.uid || req.user?._id || req.user?.sub || req.user?.uid;
-    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+    const userObjectId = resolveUserObjectId(req);
+    if (!userObjectId) return res.status(401).json({ error: 'Not authenticated' });
 
-    let cart = await Cart.findOne({ user: userId });
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: 'Invalid product id' });
+    }
+
+    let cart = await Cart.findOne({ user: userObjectId });
     if (!cart) return res.status(404).json({ error: 'Cart not found' });
 
     const idx = cart.items.findIndex((it) => String(it.product) === String(productId));
@@ -71,10 +102,10 @@ export const removeFromCart = async (req, res) => {
 // @access  Private
 export const getCart = async (req, res) => {
   try {
-    const userId = req.session?.userInfo?._id || req.session?.userInfo?.uid || req.user?._id || req.user?.sub || req.user?.uid;
-    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+    const userObjectId = resolveUserObjectId(req);
+    if (!userObjectId) return res.status(401).json({ error: 'Not authenticated' });
 
-    const cart = await Cart.findOne({ user: userId }).populate('items.product');
+    const cart = await Cart.findOne({ user: userObjectId }).populate('items.product');
     if (!cart) return res.json([]);
     return res.json(cart.items);
   } catch (err) {

@@ -1,5 +1,6 @@
 import express from 'express';
 import signature from 'cookie-signature';
+import cookie from 'cookie';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import User from '../models/User.js';
 import { OAuth2Client } from 'google-auth-library';
@@ -18,7 +19,7 @@ function setSessionCookie(req, res) {
     try {
       const rawCookie = req.headers && req.headers.cookie ? req.headers.cookie : '';
       if (rawCookie) {
-        const parsed = require('cookie').parse(rawCookie);
+        const parsed = cookie.parse(rawCookie);
         const existing = parsed['connect.sid'];
         if (existing && req.sessionID) {
           let sid = existing;
