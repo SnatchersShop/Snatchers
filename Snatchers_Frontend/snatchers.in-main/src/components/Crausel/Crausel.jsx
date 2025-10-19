@@ -65,18 +65,20 @@ export default function Carousel() {
         {slides.map((slide, index) => (
           <SwiperSlide key={index}>
             <div
-              className="relative h-full flex items-center justify-start px-4 sm:px-8 md:px-16 lg:px-28 overflow-hidden" // Responsive padding
-              style={{
-                backgroundImage: `url(${slide.image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
+              className="relative h-full flex items-center justify-start px-4 sm:px-8 md:px-16 lg:px-28 overflow-hidden bg-white" // Responsive padding
               data-swiper-parallax="-20%" // Parallax effect
             >
-              {/* Overlay for text readability */}
-              {/* <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-0" /> */}
-              
-              <div className="absolute inset-0 z-0" />
+              {/* Full-slide image placed as an absolutely positioned <img> using object-contain
+                  so the entire image remains visible on mobile, tablet and desktop. */}
+              <img
+                src={slide.image}
+                alt={slide.heading || slide.title}
+                aria-hidden={true}
+                className="absolute inset-0 w-full h-full object-contain object-center pointer-events-none z-0"
+              />
+
+              {/* Optional subtle overlay (keeps text readable when needed) */}
+              <div className="absolute inset-0 z-5 bg-white/0" />
 
               <div
                 className="relative z-10 text-gray-900 max-w-3xl" // Max width for content
