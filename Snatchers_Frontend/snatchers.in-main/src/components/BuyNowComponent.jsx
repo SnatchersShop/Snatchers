@@ -31,12 +31,12 @@ const BuyNowComponent = () => {
       const token = localStorage.getItem('token');
       if (useServer) {
         // Try same-origin request which will send HTTP-only session cookie set by backend
-        const backend = process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in';
         try {
-          const resp = await api.get(backend + `/api/user/me`, { headers: { 'Cache-Control': 'no-store' } });
-          const user = resp.data && resp.data.user ? resp.data.user : resp.data;
-          setForm((prev) => ({ ...prev, email: user.email || '' }));
-        } catch (error) {
+            // Use centralized api instance so withCredentials and interceptors are applied
+            const resp = await api.get(`/api/user/me`, { headers: { 'Cache-Control': 'no-store' } });
+            const user = resp.data && resp.data.user ? resp.data.user : resp.data;
+            setForm((prev) => ({ ...prev, email: user.email || '' }));
+          } catch (error) {
           console.log('Authentication error (server):', error.response?.status);
           if (error.response?.status === 401) {
             setAuthError('Your session has expired. Please login again to continue.');
@@ -75,8 +75,9 @@ const BuyNowComponent = () => {
   useEffect(() => {
     const load = async () => {
       setLoadingProduct(true);
-      try {
-        const resp = await api.get((process.env.REACT_APP_API_BASE_URL || 'https://api.snatchers.in') + `/api/products/${productId}`);
+        try {
+        // Use centralized api instance and relative path
+        const resp = await api.get(`/api/products/${productId}`);
         setProduct(resp.data);
       } catch (error) {
         console.log("Product fetch error:", error.response?.status);
@@ -112,7 +113,8 @@ const BuyNowComponent = () => {
         currency: "INR",
         receipt: "rcptid_" + Date.now(),
       };
-      const paymentRes = await api.post(`/payment/create-order`, paymentPayload);
+      // Ensure we call the API-mounted payment route
+      const paymentRes = await api.post(`/api/payment/create-order`, paymentPayload);
       const { id: razorpayOrderId, amount, currency } = paymentRes.data.order;
 
       const options = {
@@ -158,7 +160,8 @@ const BuyNowComponent = () => {
               payment_id,
             };
 
-            const responseSR = await api.post(`/shiprocket/create-order`, payload);
+            // Shiprocket endpoints are mounted under /api/shiprocket on the backend
+            const responseSR = await api.post(`/api/shiprocket/create-order`, payload);
 
             // Store order locally for profile page
             const orderData = {
