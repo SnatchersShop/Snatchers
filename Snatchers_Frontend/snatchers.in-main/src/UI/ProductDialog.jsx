@@ -6,7 +6,6 @@ import { Navigation, Thumbs } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/thumbs";
 import "swiper/css/navigation";
-import { useAuth } from '../contexts/AuthContext.jsx';
 import {
   addGuestCartItem,
   removeGuestCartItem,
@@ -45,44 +44,26 @@ const ProductDialog = () => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [similarProducts, setSimilarProducts] = useState([]);
-  const { getSession } = useAuth();
+  // We use server session cookie + api (withCredentials) to detect auth; no Cognito getSession here
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        console.log("Fetching product with ID:", productId);
-        console.log("API Base URL:", process.env.REACT_APP_API_BASE_URL);
-      const session = await getSession();
-      let idToken = null;
-      if (session) {
-        idToken = session.getIdToken().getJwtToken();
-        setToken(idToken);
-      }
+      setLoading(true);
+      let isAuthenticated = false;
 
-  const productUrl = `/api/products/${productId}`;
-        console.log("Product URL:", productUrl);
-        
-        // Always fetch product data (no auth required)
+      try {
+        // 1. Fetch product data (no auth required)
         try {
+          const productUrl = `/api/products/${productId}`;
           const productRes = await api.get(productUrl);
-          console.log("Product response:", productRes.data);
           setProduct(productRes.data);
         } catch (apiErr) {
-          console.error("API call failed, trying local data:", apiErr);
-          console.log("Looking for product ID:", productId, "in local data");
-          console.log("Available local product IDs:", products.map(p => p.id));
-          
-          // Try to find product by both _id and id formats
-          let localProduct = products.find(p => p.id.toString() === productId);
-          if (!localProduct) {
-            // Try finding by _id format (in case it's a MongoDB ObjectId)
-            localProduct = products.find(p => p._id === productId);
-          }
-          
+          console.error('API call failed, trying local data:', apiErr);
+          // Local fallback (kept from original logic)
+          let localProduct = products.find(p => p.id?.toString() === productId) || products.find(p => p._id === productId);
           if (localProduct) {
-            // Convert local product format to match API format
             const convertedProduct = {
-              _id: localProduct._id || localProduct.id.toString(),
+              _id: localProduct._id || localProduct.id?.toString?.(),
               title: localProduct.title,
               price: localProduct.price,
               offerPrice: localProduct.offerPrice || null,
@@ -92,74 +73,57 @@ const ProductDialog = () => {
               badgeText: localProduct.badgeText,
               badgeClass: localProduct.badgeClass,
               category: localProduct.category,
-              occasion: localProduct.occasion
+              occasion: localProduct.occasion,
             };
-            console.log("Using local product data:", convertedProduct);
             setProduct(convertedProduct);
           } else {
-            console.error("Product not found in local data either. ProductId:", productId);
-            // If still not found, try to show a generic product or the first available product
-            if (products.length > 0) {
-              console.log("Showing first available product as fallback");
-              const fallbackProduct = products[0];
-              const convertedProduct = {
-                _id: fallbackProduct._id || fallbackProduct.id.toString(),
-                title: fallbackProduct.title,
-                price: fallbackProduct.price,
-                offerPrice: fallbackProduct.offerPrice || null,
-                rating: fallbackProduct.rating,
-                description: fallbackProduct.description,
-                images: fallbackProduct.images,
-                badgeText: fallbackProduct.badgeText,
-                badgeClass: fallbackProduct.badgeClass,
-                category: fallbackProduct.category,
-                occasion: fallbackProduct.occasion
-              };
-              setProduct(convertedProduct);
-            } else {
-              throw new Error("No products available");
-            }
+            console.error('Product not found in local data either.');
+            throw new Error('Product not found');
           }
         }
-        
-  // Only fetch cart and wishlist data if user is authenticated
-  if (session && idToken) {
+
+        // 2. Try to fetch user data (cart & wishlist) using session cookie
+        try {
+          const [cartRes, wishlistRes] = await Promise.all([
+            api.get('/api/cart'),
+            api.get('/api/wishlist')
+          ]);
+
+          isAuthenticated = true;
+
+          const cartIds = Array.isArray(cartRes.data) ? cartRes.data.map((item) => item.product._id) : [];
+          const wishlistIds = Array.isArray(wishlistRes.data)
+            ? wishlistRes.data.map((item) => (typeof item === 'object' && item.productId ? item.productId._id || item.productId : item._id || item))
+            : [];
+
+          setCart(cartIds);
+          setWishlist(wishlistIds);
+        } catch (err) {
+          // If fetching user data fails (likely unauthenticated), treat as guest
+          console.log('Could not fetch user data. Assuming guest.', err?.response?.status || err.message);
+          isAuthenticated = false;
+          setWishlist([]);
           try {
-            const [cartRes, wishlistRes] = await Promise.all([
-              api.get(`/api/cart`),
-              api.get(`/api/wishlist`)
-            ]);
-            const cartIds = cartRes.data.map((item) => item.product._id);
-            const wishlistIds = wishlistRes.data.map((item) => 
-              typeof item === "object" && item.productId ? item.productId._id || item.productId : item._id || item
-            );
-            setCart(cartIds);
-            setWishlist(wishlistIds);
-          } catch (err) {
-            console.error("Error fetching cart/wishlist:", err);
-            // Don't fail the whole operation if cart/wishlist fetch fails
+            const guest = (await import('../utils/guestCart')).getGuestCart();
+            setCart(guest.map((p) => p._id));
+          } catch (e) {
+            setCart([]);
           }
-  } else {
-    // initialize cart from guest storage for unauthenticated users
-    try {
-      const guest = (await import('../utils/guestCart')).getGuestCart();
-      setCart(guest.map((p) => p._id));
-    } catch (e) {
-      // ignore
-    }
-  }
+        }
+
       } catch (err) {
-        console.error("Error fetching product data:", err);
-        console.error("Error response:", err.response?.data);
-        console.error("Error status:", err.response?.status);
+        console.error('Error fetching product data:', err);
         setProduct(null);
       } finally {
+        // 3. Store boolean auth flag in token state so UI can enable/disable actions
+        setToken(!!isAuthenticated);
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [productId, getSession]);
+    // Remove getSession from deps; we only care about productId changes
+  }, [productId]);
 
   // After product is loaded, fetch other products and filter by same category
   useEffect(() => {
