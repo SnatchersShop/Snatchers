@@ -117,7 +117,7 @@ const Wishlist = () => {
 
       {showDebug && (
         <div className="fixed top-24 right-6 z-50 bg-black text-white px-3 py-2 rounded shadow">
-          <div className="text-xs">Debug: token {tokenAvailable ? 'available' : 'missing'}</div>
+          <div className="text-xs">Debug: wishlist items {wishlist.length}</div>
         </div>
       )}
 
