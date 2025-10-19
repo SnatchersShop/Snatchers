@@ -74,7 +74,7 @@ export default function Carousel() {
                 src={slide.image}
                 alt={slide.heading || slide.title}
                 aria-hidden={true}
-                className="absolute inset-0 w-full h-full object-contain object-center pointer-events-none z-0"
+                className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none z-0"
               />
 
               {/* Optional subtle overlay (keeps text readable when needed) */}

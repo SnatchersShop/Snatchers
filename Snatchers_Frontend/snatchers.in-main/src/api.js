@@ -29,9 +29,20 @@ api.interceptors.response.use(
   (error) => {
     try {
       if (error && error.response && error.response.status === 401) {
+        // Clear any locally stored token so future requests won't include it
         localStorage.removeItem('token');
-        // redirect to login page
-        window.location.href = '/login';
+        // Emit an event so the app can handle unauthorized state explicitly
+        try {
+          window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { status: 401 } }));
+        } catch (e) {
+          // fallback: simple event for older browsers
+          const ev = document.createEvent && document.createEvent('Event');
+          if (ev && ev.initEvent) {
+            ev.initEvent('auth:unauthorized', true, true);
+            try { window.dispatchEvent(ev); } catch (ignore) {}
+          }
+        }
+        // Do NOT perform a global redirect here — callers should decide how to react.
       }
     } catch (e) {}
     return Promise.reject(error);
