@@ -11,48 +11,11 @@ const placeholderImg = '/placeholder.png'; // Replace with your actual path if d
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
   const navigate = useNavigate();
-  const { wishlist: localWishlist, toggleWishlist: toggleLocalWishlist } = useContext(WishlistContext);
+  const { toggleWishlist: toggleLocalWishlist } = useContext(WishlistContext);
   const [loading, setLoading] = useState(true);
   const showDebug = typeof window !== 'undefined' && window.location.search.includes('debug=1');
 
-  const fetchWishlist = async () => {
-    try {
-      // Try to fetch server-side wishlist using session cookie (api has withCredentials:true)
-      const res = await api.get('/api/wishlist');
-      const serverProducts = Array.isArray(res.data) ? res.data : [];
 
-      // If there are local wishlist IDs saved (from before login), fetch those product details
-      const localIds = (localWishlist || []).filter(id => !serverProducts.find(p => p._id === id));
-      let localProducts = [];
-      if (localIds.length > 0) {
-        const fetches = localIds.map(id => api.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
-        const fetched = await Promise.all(fetches);
-        localProducts = fetched.filter(Boolean);
-      }
-
-      setWishlist([...serverProducts, ...localProducts]);
-    } catch (error) {
-      // If server wishlist fetch fails (likely unauthenticated), fall back to local wishlist
-      console.debug('Server wishlist fetch failed or unauthenticated:', error?.response?.status || error.message);
-      const localIds = localWishlist || [];
-      if (localIds.length === 0) {
-        setWishlist([]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const fetches = localIds.map(id => api.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
-        const fetched = await Promise.all(fetches);
-        setWishlist(fetched.filter(Boolean));
-      } catch (innerErr) {
-        console.error('Failed to fetch local product details:', innerErr);
-        setWishlist([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const removeFromWishlist = async (productId) => {
     try {
@@ -91,18 +54,29 @@ const Wishlist = () => {
     removeFromWishlist(productId);
   };
 
-  // Re-fetch when the local wishlist changes so unauthenticated users see updates,
-  // and to merge local IDs when user logs in. Listen for global wishlist change
-  // events and wait for Firebase auth readiness before fetching so we get a token
-  // when available.
+  // Simple fetch: use the api client to request server wishlist (sends cookie)
   useEffect(() => {
-    // Re-fetch when local wishlist changes and when other components signal changes
-    fetchWishlist();
-    const handler = () => fetchWishlist();
+    const doFetch = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/api/wishlist');
+        const serverProducts = Array.isArray(res.data) ? res.data : [];
+        setWishlist(serverProducts);
+      } catch (err) {
+        console.error('Failed to fetch wishlist:', err);
+        setWishlist([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    doFetch();
+    // Listen for external wishlist changes and re-fetch
+    const handler = () => doFetch();
     window.addEventListener('wishlist:changed', handler);
     return () => window.removeEventListener('wishlist:changed', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localWishlist]);
+  }, []);
 
   if (loading) {
     return <div className="text-center mt-10 text-lg font-medium text-gray-600">Loading your wishlist...</div>;
