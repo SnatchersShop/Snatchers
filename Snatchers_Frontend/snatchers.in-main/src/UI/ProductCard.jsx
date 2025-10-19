@@ -1,6 +1,8 @@
 import React from "react";
 import PropTypes from 'prop-types';
 import { FaHeart, FaRegHeart } from "react-icons/fa";
+import api from '../api';
+import { toast } from 'react-toastify';
 
 // Simple currency formatter (INR). Keeps no fractional digits to match original UI.
 const formatCurrency = (value) => {
@@ -17,6 +19,8 @@ const ProductCard = ({
   price,
   offerPrice = null,
   rating = 0,
+  _id = null,
+  id = null,
   onAddToCart,
   onRemoveFromCart,
   isInCart = false,
@@ -28,6 +32,40 @@ const ProductCard = ({
   wishlisted = false,
   onToggleWishlist,
 }) => {
+  // productId fallback
+  const productId = _id || id;
+
+  const handleWishlistClick = async (e) => {
+    e.stopPropagation();
+    if (typeof onToggleWishlist === 'function') {
+      onToggleWishlist(e);
+      return;
+    }
+
+    if (!productId) {
+      console.warn('ProductCard: no product id provided for wishlist API fallback');
+      toast.error('Cannot update wishlist (missing product id)');
+      return;
+    }
+
+    try {
+      if (wishlisted) {
+        await api.delete(`/api/wishlist/${productId}`);
+        toast.success('Removed from wishlist');
+      } else {
+        await api.post('/api/wishlist/add', { productId });
+        toast.success('Added to wishlist');
+      }
+      window.dispatchEvent(new Event('wishlist:changed'));
+    } catch (err) {
+      if (err.response?.status === 401) {
+        toast.error('Please log in to add to wishlist.');
+      } else {
+        toast.error('Could not update wishlist.');
+      }
+    }
+  };
+
   return (
     <div
       onClick={onClick}
@@ -63,10 +101,7 @@ const ProductCard = ({
       {/* Wishlist heart icon as a button to avoid unwanted navigation */}
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleWishlist?.(e);
-        }}
+        onClick={handleWishlistClick}
         className="absolute top-2 right-2 z-20 text-xl text-pink-500 hover:text-pink-700 transition-colors"
         aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
       >
@@ -141,24 +176,8 @@ ProductCard.propTypes = {
   onCompare: PropTypes.func,
   wishlisted: PropTypes.bool,
   onToggleWishlist: PropTypes.func,
-};
-
-ProductCard.propTypes = {
-  image: PropTypes.string.isRequired,
-  title: PropTypes.string.isRequired,
-  price: PropTypes.number.isRequired,
-  offerPrice: PropTypes.number,
-  rating: PropTypes.number,
-  onAddToCart: PropTypes.func,
-  onRemoveFromCart: PropTypes.func,
-  isInCart: PropTypes.bool,
-  badgeText: PropTypes.string,
-  badgeClass: PropTypes.string,
-  onClick: PropTypes.func,
-  onQuickView: PropTypes.func,
-  onCompare: PropTypes.func,
-  wishlisted: PropTypes.bool,
-  onToggleWishlist: PropTypes.func,
+  _id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 export default ProductCard;

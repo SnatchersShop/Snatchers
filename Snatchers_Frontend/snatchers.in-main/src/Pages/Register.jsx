@@ -38,9 +38,9 @@ export default function Register() {
   async function handleRegister() {
     try {
       const emailNormalized = String(email || '').trim().toLowerCase();
-      const res = await api.post('/register', { email: emailNormalized, password, name });
-      toast.success('Registration successful! Redirecting...');
-      setTimeout(() => navigate('/'), 1200);
+      const res = await api.post('/api/register', { email: emailNormalized, password, name });
+        toast.success('Registration successful! Redirecting to login...');
+        setTimeout(() => navigate('/login'), 1200);
     } catch (err) {
       const msg = err?.response?.data?.error || err.message || 'Unknown error';
       toast.error('Register error: ' + msg);

@@ -291,6 +291,9 @@ const BuyNowComponent = () => {
     );
   }
 
+  // Determine the selling price to display/use: prefer offerPrice, then originalPrice, then price
+  const sellingPrice = product ? (product.offerPrice ?? product.originalPrice ?? product.price) : 0;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
@@ -467,7 +470,7 @@ const BuyNowComponent = () => {
                 <hr className="my-2" />
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-gray-800">Total:</span>
-                  <span className="font-bold text-xl text-black">₹{product.price}</span>
+                  <span className="font-bold text-xl text-black">₹{sellingPrice}</span>
                 </div>
               </div>
               
@@ -487,7 +490,7 @@ const BuyNowComponent = () => {
                     Processing...
                   </div>
                 ) : (
-                  `Pay ₹${product.price} Now`
+                  `Pay ₹${sellingPrice} Now`
                 )}
               </button>
               
