@@ -5,70 +5,50 @@ import ProductCard from '../UI/ProductCard';
 import { useNavigate } from 'react-router-dom';
 import AnimatedHeading from '../UI/AnimatedHeading'; // Adjust path as needed
 import { WishlistContext } from '../contexts/WishlistContext';
-import { useAuth } from '../contexts/AuthContext.jsx';
 
 const placeholderImg = '/placeholder.png'; // Replace with your actual path if different
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { wishlist: localWishlist, toggleWishlist: toggleLocalWishlist } = useContext(WishlistContext);
-  const [tokenAvailable, setTokenAvailable] = useState(false);
-  const { getSession } = useAuth();
+  const [loading, setLoading] = useState(true);
   const showDebug = typeof window !== 'undefined' && window.location.search.includes('debug=1');
 
   const fetchWishlist = async () => {
     try {
-      // Prefer ID token from Cognito session, fallback to stored backend token
-      let token = localStorage.getItem('token');
-      if (!token) {
-        try {
-          const session = await getSession();
-          if (session) token = session.getIdToken().getJwtToken();
-        } catch (innerErr) {
-          console.debug('No Cognito session available:', innerErr?.message || innerErr);
-        }
+      // Try to fetch server-side wishlist using session cookie (api has withCredentials:true)
+      const res = await api.get('/api/wishlist');
+      const serverProducts = Array.isArray(res.data) ? res.data : [];
+
+      // If there are local wishlist IDs saved (from before login), fetch those product details
+      const localIds = (localWishlist || []).filter(id => !serverProducts.find(p => p._id === id));
+      let localProducts = [];
+      if (localIds.length > 0) {
+        const fetches = localIds.map(id => api.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
+        const fetched = await Promise.all(fetches);
+        localProducts = fetched.filter(Boolean);
       }
 
-      if (token) {
-        setTokenAvailable(true);
-        // Logged-in: fetch from server and also include any local wishlist (merge de-duplicated)
-  const res = await api.get(`/api/wishlist`);
+      setWishlist([...serverProducts, ...localProducts]);
+    } catch (error) {
+      // If server wishlist fetch fails (likely unauthenticated), fall back to local wishlist
+      console.debug('Server wishlist fetch failed or unauthenticated:', error?.response?.status || error.message);
+      const localIds = localWishlist || [];
+      if (localIds.length === 0) {
+        setWishlist([]);
+        setLoading(false);
+        return;
+      }
 
-        const serverProducts = res.data || [];
-
-        // If there are local wishlist IDs saved (from before login), fetch those product details
-        const localIds = (localWishlist || []).filter(id => !serverProducts.find(p => p._id === id));
-
-        let localProducts = [];
-        if (localIds.length > 0) {
-          // Fetch product details in parallel for local ids not present on server
-          const fetches = localIds.map(id => api.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
-          const fetched = await Promise.all(fetches);
-          localProducts = fetched.filter(Boolean);
-        }
-
-        setWishlist([...serverProducts, ...localProducts]);
-      } else {
-        setTokenAvailable(false);
-        // Not logged in: show products from local wishlist (IDs stored in context/localStorage)
-        const localIds = localWishlist || [];
-        if (localIds.length === 0) {
-          setWishlist([]);
-          return;
-        }
-
-  const fetches = localIds.map(id => api.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
+      try {
+        const fetches = localIds.map(id => api.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
         const fetched = await Promise.all(fetches);
         setWishlist(fetched.filter(Boolean));
+      } catch (innerErr) {
+        console.error('Failed to fetch local product details:', innerErr);
+        setWishlist([]);
       }
-    } catch (error) {
-      console.error('Failed to fetch wishlist:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-      });
     } finally {
       setLoading(false);
     }
@@ -76,26 +56,20 @@ const Wishlist = () => {
 
   const removeFromWishlist = async (productId) => {
     try {
-      let token = localStorage.getItem('token');
-      if (!token) {
-        try {
-          const session = await getSession();
-          if (session) token = session.getIdToken().getJwtToken();
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      if (token) {
-        // call server endpoint to remove wishlist item; ensure /api/ prefix so nginx routes to backend
+      // Try server-side removal first (if user is authenticated via session cookie)
+      try {
         await api.delete(`/api/wishlist/${productId}`);
-
         setWishlist((prev) => prev.filter((item) => item._id !== productId));
-      } else {
-        // If not logged in, remove via context toggle which updates localStorage
-        toggleLocalWishlist(productId);
-        // Update the UI immediately
-        setWishlist((prev) => prev.filter((item) => item._id !== productId));
+        return;
+      } catch (err) {
+        // If unauthorized, fall back to local wishlist toggle
+        if (err.response?.status === 401) {
+          toggleLocalWishlist(productId);
+          setWishlist((prev) => prev.filter((item) => item._id !== productId));
+          return;
+        }
+        // If some other error occurred, rethrow so outer catch handles it
+        throw err;
       }
     } catch (error) {
       console.error('Error removing from wishlist:', error);
@@ -122,23 +96,11 @@ const Wishlist = () => {
   // events and wait for Firebase auth readiness before fetching so we get a token
   // when available.
   useEffect(() => {
-    // Check current session and re-fetch when wishlist changes
-    (async () => {
-      await getSession();
-      fetchWishlist();
-    })();
-
-    // Also listen for manual wishlist changed events from other components
+    // Re-fetch when local wishlist changes and when other components signal changes
+    fetchWishlist();
     const handler = () => fetchWishlist();
     window.addEventListener('wishlist:changed', handler);
-
-    // Initial fetch (fetchWishlist will attempt to read token from localStorage
-    // and will also check getAuth().currentUser internally)
-    fetchWishlist();
-
-    return () => {
-      window.removeEventListener('wishlist:changed', handler);
-    };
+    return () => window.removeEventListener('wishlist:changed', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localWishlist]);
 
