@@ -1,7 +1,7 @@
 // routes/wishlist.js
 import express from "express";
 import Wishlist from "../models/Wishlist.js";
-import { isAuthenticated } from "../middleware/authMiddleware.js";
+import { isAuthenticated } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -27,31 +27,8 @@ router.get("/", isAuthenticated, async (req, res) => {
   }
 });
 
-// POST: Add product to wishlist
-router.post("/:productId", isAuthenticated, async (req, res) => {
-  try {
-    const userId = req.authId || req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
-    const productId = req.params.productId;
-
-    if (!productId) return res.status(400).json({ message: 'productId required' });
-
-    let wishlist = await Wishlist.findOne({ userId });
-    if (!wishlist) {
-      wishlist = new Wishlist({ userId, products: [productId] });
-    } else {
-      // Use string comparison for ObjectId safety
-      const exists = wishlist.products.some(p => String(p) === String(productId));
-      if (!exists) wishlist.products.push(productId);
-    }
-    await wishlist.save();
-    return res.status(200).json({ message: "Added to wishlist", wishlist });
-  } catch (err) {
-    console.error('[wishlist] POST /:productId error:', err);
-    return res.status(500).json({ message: "Error adding to wishlist", error: err.message });
-  }
-});
-
 // POST: Add product to wishlist (body variant) - convenient for SPA clients
+// NOTE: This route must be defined before any dynamic routes like '/:productId'
 router.post("/add", isAuthenticated, async (req, res) => {
   try {
     const userId = req.authId || req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
