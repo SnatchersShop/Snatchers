@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from '../api';
 import { toast } from 'react-toastify';
 import ProductCard from "../UI/ProductCard";
-import { useAuth } from '../contexts/AuthContext.jsx';
+// auth handled via API session cookie; no Cognito getSession required here
 import { guestCartIncludes, addGuestCartItem, removeGuestCartItem } from '../utils/guestCart';
 import { StaggeredReveal, RevealOnScroll, MagneticScroll } from "../components/ScrollAnimations";
 import productsFallback from '../Data/ProductData';
@@ -16,77 +16,73 @@ const Shop = () => {
   const [usedFallback, setUsedFallback] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
-  const { getSession } = useAuth();
 
   const placeholderImg =
     "https://redthread.uoregon.edu/files/original/affd16fd5264cab9197da4cd1a996f820e601ee4.png";
 
   useEffect(() => {
     const fetchData = async () => {
+      let isAuthenticated = false;
+
+      // 1) Always fetch products (no auth required)
       try {
-        const session = await getSession();
-        
-        // Always fetch products (no auth required)
+        const productsRes = await api.get(`/api/products`);
+        setProducts(productsRes.data);
+      } catch (err) {
+        console.warn('Shop: product API failed, using local fallback', err?.message || err);
+        setUsedFallback(true);
+        setErrorMsg(err?.message || String(err));
+        const local = productsFallback.map(p => ({
+          _id: p._id || p.id?.toString?.() || `${p.title}-${Math.random()}`,
+          title: p.title,
+          price: p.price,
+          offerPrice: p.offerPrice || null,
+          rating: p.rating,
+          images: p.images || [],
+          badgeText: p.badgeText,
+          badgeClass: p.badgeClass,
+          description: p.description,
+          category: p.category,
+        }));
+        setProducts(local);
+      }
+
+      // 2) Try to fetch user-specific data using the API (sends session cookie)
+      try {
+        const [wishlistRes, cartRes] = await Promise.all([
+          api.get(`/api/wishlist`),
+          api.get(`/api/cart`),
+        ]);
+
+        isAuthenticated = true;
+
+        const wishlistedIds = wishlistRes.data.map((item) =>
+          typeof item === "object" && item.productId
+            ? item.productId._id || item.productId
+            : item._id || item
+        );
+        setWishlist(wishlistedIds);
+
+        const cartIds = cartRes.data.map((item) => item.product._id);
+        setCart(cartIds);
+      } catch (userDataErr) {
+        console.log("Could not fetch user data. Assuming guest.", userDataErr.message);
+        isAuthenticated = false;
+        setWishlist([]);
         try {
-          const productsRes = await api.get(`/api/products`);
-          setProducts(productsRes.data);
-        } catch (err) {
-          console.warn('Shop: product API failed, using local fallback', err?.message || err);
-          setUsedFallback(true);
-          setErrorMsg(err?.message || String(err));
-          const local = productsFallback.map(p => ({
-            _id: p._id || p.id?.toString?.() || `${p.title}-${Math.random()}`,
-            title: p.title,
-            price: p.price,
-            offerPrice: p.offerPrice || null,
-            rating: p.rating,
-            images: p.images || [],
-            badgeText: p.badgeText,
-            badgeClass: p.badgeClass,
-            description: p.description,
-            category: p.category,
-          }));
-          setProducts(local);
-        }
-
-        // Only fetch user-specific data if logged in
-        if (session) {
-          const idToken = session.getIdToken().getJwtToken();
-          setToken(idToken);
-
-          try {
-            const [wishlistRes, cartRes] = await Promise.all([
-              api.get(`/api/wishlist`),
-              api.get(`/api/cart`),
-            ]);
-
-            const wishlistedIds = wishlistRes.data.map((item) =>
-              typeof item === "object" && item.productId
-                ? item.productId._id || item.productId
-                : item._id || item
-            );
-            setWishlist(wishlistedIds);
-
-            const cartIds = cartRes.data.map((item) => item.product._id);
-            setCart(cartIds);
-          } catch (userDataErr) {
-            console.log("User data fetch failed (user might not have cart/wishlist yet):", userDataErr);
-            // Set empty arrays for non-logged in users
-            setWishlist([]);
-            setCart([]);
-          }
-        } else {
-          // Set empty arrays for non-logged in users
-          setWishlist([]);
+          const guest = (await import('../utils/guestCart')).getGuestCart();
+          setCart(guest.map((p) => p._id));
+        } catch (e) {
           setCart([]);
         }
-      } catch (err) {
-        console.error("Error fetching shop data:", err);
       }
+
+      // 3) Set token to a boolean flag indicating authenticated or not
+      setToken(isAuthenticated);
     };
 
     fetchData();
-  }, [getSession]);
+  }, []);
 
   const toggleWishlist = async (e, productId) => {
     e?.stopPropagation?.();
@@ -103,7 +99,6 @@ const Shop = () => {
         window.dispatchEvent(new Event('wishlist:changed'));
         toast.success('Removed from wishlist');
       } else {
-        // use the new body-based endpoint for adding
         await api.post(`/api/wishlist/add`, { productId });
         setWishlist((prev) => [...prev, productId]);
         window.dispatchEvent(new Event('wishlist:changed'));
@@ -111,7 +106,12 @@ const Shop = () => {
       }
     } catch (err) {
       console.error("Error updating wishlist:", err);
-      toast.error('Unable to update wishlist');
+      if (err.response?.status === 401) {
+        toast.error('Your session expired. Please log in.');
+        navigate('/login');
+      } else {
+        toast.error('Unable to update wishlist');
+      }
     }
   };
 
