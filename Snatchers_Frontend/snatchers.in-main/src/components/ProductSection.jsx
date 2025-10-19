@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
 import api from '../api';
-import api from '../api';
 import ProductCard from '../UI/ProductCard';
 import productsFallback from '../Data/ProductData';
 import { useNavigate } from 'react-router-dom';
@@ -100,6 +99,7 @@ export default function ProductSection({ title = 'Products', limit = 12 }) {
         {products.map((prod) => (
           <ProductCard
             key={prod._id}
+            product={prod}
             image={prod.images?.[0] || '/fallback-image.jpg'}
             title={prod.title}
             price={prod.price}

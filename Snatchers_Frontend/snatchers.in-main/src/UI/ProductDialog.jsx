@@ -699,6 +699,7 @@ const ProductDialog = () => {
             {similarProducts.map((sp) => (
               <ProductCard
                 key={sp._id}
+                product={sp}
                 image={sp.images?.[0] || '/fallback-image.jpg'}
                 title={sp.title}
                 price={sp.price}

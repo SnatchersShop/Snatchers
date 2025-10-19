@@ -21,6 +21,7 @@ const ProductCard = ({
   rating = 0,
   _id = null,
   id = null,
+  product = null,
   onAddToCart,
   onRemoveFromCart,
   isInCart = false,
@@ -33,7 +34,7 @@ const ProductCard = ({
   onToggleWishlist,
 }) => {
   // productId fallback
-  const productId = _id || id;
+  const productId = _id || id || (product && (product._id || product.id));
 
   const handleWishlistClick = async (e) => {
     e.stopPropagation();
@@ -178,6 +179,7 @@ ProductCard.propTypes = {
   onToggleWishlist: PropTypes.func,
   _id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  product: PropTypes.object,
 };
 
 export default ProductCard;

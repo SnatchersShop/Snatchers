@@ -170,6 +170,7 @@ const CategoryShop = () => {
             filteredProducts.map((product) => (
               <ProductCard
                 key={product._id}
+                product={product}
                 image={product.images?.[0] || placeholderImg}
                 title={product.title}
                 price={product.price}

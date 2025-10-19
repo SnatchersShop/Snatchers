@@ -189,7 +189,8 @@ const BuyNowComponent = () => {
             try {
               const token = localStorage.getItem("token");
               if (token) {
-                await api.post(`/orders`, orderData);
+                // send to API with cookie or token via api instance
+                await api.post(`/api/orders/create`, orderData);
                 console.log('Order saved to backend successfully');
               }
             } catch (backendError) {

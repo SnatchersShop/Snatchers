@@ -173,6 +173,7 @@ const Shop = () => {
               <div key={product._id} className="stagger-item">
                 <MagneticScroll strength={0.15}>
                   <ProductCard
+                    product={product}
                     image={product.images?.[0] || placeholderImg}
                     title={product.title}
                     price={product.price}

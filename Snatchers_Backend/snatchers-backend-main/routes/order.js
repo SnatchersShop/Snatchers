@@ -5,30 +5,34 @@ import verifyToken from "../middleware/auth.js";
 
 const router = express.Router();
 
-// POST: Create a new order
-router.post("/", verifyToken, async (req, res) => {
+// Create order handler used by multiple routes
+const createOrderHandler = async (req, res) => {
   try {
     const userId = req.user?.sub || req.user?.uid || req.user?.['cognito:username'];
     const orderData = {
       ...req.body,
       userId,
     };
-    
+
     const order = new Order(orderData);
     await order.save();
-    
-    res.status(201).json({ 
-      message: "Order saved successfully", 
-      order 
+
+    res.status(201).json({
+      message: "Order saved successfully",
+      order,
     });
   } catch (err) {
     console.error("Order creation error:", err);
-    res.status(500).json({ 
-      message: "Error saving order", 
-      error: err.message 
+    res.status(500).json({
+      message: "Error saving order",
+      error: err.message,
     });
   }
-});
+};
+
+// POST / and POST /create both create an order
+router.post("/", verifyToken, createOrderHandler);
+router.post("/create", verifyToken, createOrderHandler);
 
 // GET: Fetch user's orders
 router.get("/", verifyToken, async (req, res) => {
