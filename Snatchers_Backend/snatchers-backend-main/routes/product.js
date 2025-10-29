@@ -74,9 +74,11 @@ router.post("/", upload.array("images", 5), async (req, res) => {
 
     // 2. GENERATE YOUR UNIQUE PRODUCT ID
     const uniqueProductId = `prod_${nanoid(10)}`; 
+    const uniqueSKU = `SKU_${nanoid(8)}`;
     
     const product = new Product({
       product_id: uniqueProductId, // 3. ADD THE UNIQUE ID HERE
+      sku: uniqueSKU, // 4. ADD THE UNIQUE SKU HERE
       images: imageUrls,
       title,
       price: Number(price),
