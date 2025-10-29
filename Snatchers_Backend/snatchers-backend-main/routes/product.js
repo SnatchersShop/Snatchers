@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 
 import { storage } from "../config/cloudinary.js";
 import Product from "../models/Product.js";
+import { nanoid } from 'nanoid';
 
 const upload = multer({ storage });
 const router = express.Router();
