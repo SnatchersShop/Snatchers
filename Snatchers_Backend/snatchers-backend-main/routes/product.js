@@ -49,7 +49,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/products - Create product with multiple images
-import { nanoid } from 'nanoid'; // 1. IMPORT NANOID HERE
+ // 1. IMPORT NANOID HERE
 
 router.post("/", upload.array("images", 5), async (req, res) => {
   console.log("Received files:", req.files);
