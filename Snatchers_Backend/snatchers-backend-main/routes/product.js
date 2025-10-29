@@ -48,6 +48,8 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/products - Create product with multiple images
+import { nanoid } from 'nanoid'; // 1. IMPORT NANOID HERE
+
 router.post("/", upload.array("images", 5), async (req, res) => {
   console.log("Received files:", req.files);
   try {
@@ -68,7 +70,12 @@ router.post("/", upload.array("images", 5), async (req, res) => {
     const normalizedOccasion = Array.isArray(occasion)
       ? occasion
       : (typeof occasion === 'string' && occasion.trim().length > 0 ? occasion.split(",").map(s => s.trim()).filter(Boolean) : []);
+
+    // 2. GENERATE YOUR UNIQUE PRODUCT ID
+    const uniqueProductId = `prod_${nanoid(10)}`; 
+    
     const product = new Product({
+      product_id: uniqueProductId, // 3. ADD THE UNIQUE ID HERE
       images: imageUrls,
       title,
       price: Number(price),
