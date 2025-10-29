@@ -62,7 +62,7 @@ export default function EditProduct() {
         offerPrice: form.offerPrice === '' ? null : Number(form.offerPrice),
         rating: form.rating === '' ? 0 : Number(form.rating),
       };
-      const res = await api.put(`/products/${id}`, payload);
+      const res = await api.put(`/api/products/${id}`, payload);
       alert('Product updated');
       navigate('/admin/products');
     } catch (err) {
