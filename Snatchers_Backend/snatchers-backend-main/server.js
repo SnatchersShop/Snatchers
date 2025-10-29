@@ -91,6 +91,8 @@ app.use(
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true, // if you're using cookies or auth headers
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
 
