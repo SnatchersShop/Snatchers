@@ -76,12 +76,19 @@ const CategoryShop = () => {
         // synonyms mapping for common jewelry type names
         const synonyms = {
           ring: ['ring', 'rings', 'band', 'bands'],
+          rings: ['ring', 'rings', 'band', 'bands'],
           necklace: ['necklace', 'necklaces', 'pendant', 'pendants'],
+          necklaces: ['necklace', 'necklaces', 'pendant', 'pendants'],
           bangle: ['bangle', 'bangles', 'bracelet', 'bracelets'],
+          bangles: ['bangle', 'bangles', 'bracelet', 'bracelets'],
           bracelet: ['bracelet', 'bracelets', 'bangle', 'bangles'],
+          bracelets: ['bracelet', 'bracelets', 'bangle', 'bangles'],
           earring: ['earring', 'earrings', 'studs', 'hoop', 'hoops'],
+          earrings: ['earring', 'earrings', 'studs', 'hoop', 'hoops'],
           anklet: ['anklet', 'anklets'],
-          watch: ['watch', 'watches']
+          anklets: ['anklet', 'anklets'],
+          watch: ['watch', 'watches'],
+          watches: ['watch', 'watches']
         };
 
         // create a flat set of synonyms to check
@@ -93,9 +100,15 @@ const CategoryShop = () => {
         const productType = normalize(product.type || '');
         const productCategory = normalize(product.category || '');
 
+        // Helper to check for whole word match to avoid "ring" matching "earring"
+        const containsWholeWord = (text, word) => {
+          const regex = new RegExp(`\\b${word}\\b`, 'i');
+          return regex.test(text);
+        };
+
         // Match if jewelryType appears in title, matches a product.type field, or exists in occasion (some sites tag types in occasion)
-        const matchesInTitle = q && productTitle.includes(q);
-  const matchesInType = q && productType && (productType === q || (synSet.has(q) && synSet.has(productType)));
+        const matchesInTitle = q && containsWholeWord(productTitle, q);
+        const matchesInType = q && productType && (productType === q || (synSet.has(q) && synSet.has(productType)));
         const matchesInOccasion = q && productOccasions.some(o => o === q);
 
         // Also check synonyms (e.g., 'ring' vs 'rings', 'bracelet' vs 'bangle') by seeing if any synonym matches title/type/occasion
@@ -104,7 +117,7 @@ const CategoryShop = () => {
           const group = Object.values(synonyms).find(arr => arr.includes(q));
           if (!group) return false;
           return group.some(syn =>
-            productTitle.includes(syn) || productOccasions.includes(syn) || productType === syn || productCategory === syn
+            containsWholeWord(productTitle, syn) || productOccasions.includes(syn) || productType === syn || productCategory === syn
           );
         })();
 
